@@ -244,16 +244,16 @@ The rubric uses the grading scale from `architecture-decision.md` § 2.1:
 
 Each candidate is graded on the eight dimensions from the brief.
 
-| Dimension                       | Cedar | OPA/Rego | SpiceDB | Oso Polar | Custom DSL |
-|---------------------------------|:-----:|:--------:|:-------:|:---------:|:----------:|
-| **Primitive expressiveness**    |   C   |    B-    |    D    |    C+     |     A+     |
-| **Formal semantics**            |  A+   |    D     |    D    |    C      |     A      |
-| **Decidability of fragment**    |   A   |    C     |    B    |    C      |     A      |
-| **Compilability to PG RLS**     |   C   |    D     |    D    |    D      |     A      |
-| **Schema integration**          |   D   |    C     |    F    |    C      |     A      |
-| **Verification tooling**        |   A   |    C     |    D    |    D      |     A-     |
-| **Ecosystem maturity**          |   B   |    A     |    B    |    F      |     C      |
-| **Onramp and migration**        |   B   |    C+    |    D    |    C      |     A-     |
+| Dimension                    | Cedar | OPA/Rego | SpiceDB | Oso Polar | Custom DSL |
+|------------------------------|:-----:|:--------:|:-------:|:---------:|:----------:|
+| **Primitive expressiveness** |   C   |    B-    |    D    |    C+     |     A+     |
+| **Formal semantics**         |  A+   |    D     |    D    |     C     |     A      |
+| **Decidability of fragment** |   A   |    C     |    B    |     C     |     A      |
+| **Compilability to PG RLS**  |   C   |    D     |    D    |     D     |     A      |
+| **Schema integration**       |   D   |    C     |    F    |     C     |     A      |
+| **Verification tooling**     |   A   |    C     |    D    |     D     |     A-     |
+| **Ecosystem maturity**       |   B   |    A     |    B    |     F     |     C      |
+| **Onramp and migration**     |   B   |    C+    |    D    |     C     |     A-     |
 
 Two grades stand out as load-bearing and are spelled out in § 2.2:
 Cedar's `C` on expressiveness comes from the entity-instance vs. row-set
@@ -1099,16 +1099,16 @@ remains the custom DSL.
 The custom DSL is not the top-graded candidate in every dimension. The
 trade-offs are explicit.
 
-| Dimension                       | Custom DSL grade | Leader | Leader grade |
-|---------------------------------|:----------------:|:------:|:------------:|
-| **Primitive expressiveness**    |       A+         | —      | A+           |
-| **Formal semantics**            |       A          | Cedar  | A+           |
-| **Decidability of fragment**    |       A          | —      | A            |
-| **Compilability to PG RLS**     |       A          | —      | A            |
-| **Schema integration**          |       A          | —      | A            |
-| **Verification tooling**        |       A-         | Cedar  | A            |
-| **Ecosystem maturity**          |       C          | Rego   | A            |
-| **Onramp and migration**        |       A-         | —      | A-           |
+| Dimension                    | Custom DSL grade | Leader | Leader grade |
+|------------------------------|:----------------:|:------:|:------------:|
+| **Primitive expressiveness** |        A+        |   —    |      A+      |
+| **Formal semantics**         |        A         | Cedar  |      A+      |
+| **Decidability of fragment** |        A         |   —    |      A       |
+| **Compilability to PG RLS**  |        A         |   —    |      A       |
+| **Schema integration**       |        A         |   —    |      A       |
+| **Verification tooling**     |        A-        | Cedar  |      A       |
+| **Ecosystem maturity**       |        C         |  Rego  |      A       |
+| **Onramp and migration**     |        A-        |   —    |      A-      |
 
 The custom DSL is the leader or tied in six of eight dimensions. The
 gaps are on two dimensions:
@@ -1191,13 +1191,13 @@ permits, impossible conditions, forbid overrides, and complete denials
 (AWS Open Source Blog, *Introducing Cedar Analysis*). Cross-mapping to
 the algebra:
 
-| Algebra analysis            | Cedar Analysis                       | Coverage |
-|-----------------------------|--------------------------------------|----------|
-| Satisfiability (§ 8.1)      | "Impossible conditions"              | Direct   |
-| Subsumption (§ 8.2)         | "More/less permissive after changes" | Direct   |
-| Redundancy (§ 8.3)          | "Shadowed permits"                   | Direct   |
-| Contradiction (§ 8.4)       | "Complete denials"                   | Direct   |
-| Tenant isolation (§ 8.5)    | (Not named)                          | Indirect |
+| Algebra analysis         | Cedar Analysis                       | Coverage |
+|--------------------------|--------------------------------------|----------|
+| Satisfiability (§ 8.1)   | "Impossible conditions"              | Direct   |
+| Subsumption (§ 8.2)      | "More/less permissive after changes" | Direct   |
+| Redundancy (§ 8.3)       | "Shadowed permits"                   | Direct   |
+| Contradiction (§ 8.4)    | "Complete denials"                   | Direct   |
+| Tenant isolation (§ 8.5) | (Not named)                          | Indirect |
 
 Tenant isolation is not a named Cedar analysis but it is expressible
 as: "given two policy evaluations with sessions differing in
@@ -1338,13 +1338,13 @@ Lean familiarity. It is the highest-leverage borrowing from Cedar.
 Aligning the analyses' user-facing names with Cedar's terminology
 where the concepts coincide reduces friction. The mapping:
 
-| Algebra (internal)             | User-facing (Cedar-aligned)       |
-|--------------------------------|-----------------------------------|
-| "satisfiability"               | "impossibility detection"         |
-| "subsumption"                  | "permissiveness comparison"       |
-| "redundancy"                   | "shadowed-policy detection"       |
-| "contradiction"                | "complete-denial detection"       |
-| "tenant isolation"             | (no Cedar analog — keep as-is)    |
+| Algebra (internal) | User-facing (Cedar-aligned)    |
+|--------------------|--------------------------------|
+| "satisfiability"   | "impossibility detection"      |
+| "subsumption"      | "permissiveness comparison"    |
+| "redundancy"       | "shadowed-policy detection"    |
+| "contradiction"    | "complete-denial detection"    |
+| "tenant isolation" | (no Cedar analog — keep as-is) |
 
 The internal vocabulary in the algebra spec, code, and tests should
 not change; only the CLI output, JSON field names, and user-facing
@@ -1399,17 +1399,17 @@ forward-looking optimizations, not corrections.
 
 ## Appendix: Traceability Matrix
 
-| Requirement                       | Source                                          |
-|-----------------------------------|-------------------------------------------------|
-| Primitive expressiveness          | `policy-algebra.md` §§ 2, 3, 4, 6, 7            |
-| Formal semantics                  | `policy-algebra.md` § 14 (theorems 1.1–12.2)    |
-| Decidability                      | `policy-algebra.md` § 1.1, § 2.5                |
-| Compilability to RLS              | `policy-algebra.md` § 10                        |
-| Schema integration                | `policy-algebra.md` § 6.2                       |
-| Verification tooling              | `policy-algebra.md` § 8                         |
-| Ecosystem maturity                | PRD § 3, § 5                                    |
-| Onramp                            | PRD § 3.1                                       |
-| Leave-no-trace                    | `architecture-decision.md` § 1.6.1              |
+| Requirement              | Source                                       |
+|--------------------------|----------------------------------------------|
+| Primitive expressiveness | `policy-algebra.md` §§ 2, 3, 4, 6, 7         |
+| Formal semantics         | `policy-algebra.md` § 14 (theorems 1.1–12.2) |
+| Decidability             | `policy-algebra.md` § 1.1, § 2.5             |
+| Compilability to RLS     | `policy-algebra.md` § 10                     |
+| Schema integration       | `policy-algebra.md` § 6.2                    |
+| Verification tooling     | `policy-algebra.md` § 8                      |
+| Ecosystem maturity       | PRD § 3, § 5                                 |
+| Onramp                   | PRD § 3.1                                    |
+| Leave-no-trace           | `architecture-decision.md` § 1.6.1           |
 
 Every grade in § 2.1 is justified in § 2.2; every disqualification in
 § 2.3 is reasoned against the requirements in § 1; every borrowing in
