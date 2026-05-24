@@ -1,0 +1,90 @@
+SET
+Timing is on.
+=== Probe 1a: B with enable_hashjoin = off, enable_mergejoin = off ===
+SET
+Time: 0.309 ms
+SET
+Time: 0.295 ms
+                                                                     QUERY PLAN                                                                      
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=963.86..1482.17 rows=4500 width=37) (actual time=1.580..12.944 rows=3317 loops=1)
+   Buffers: shared hit=4590
+   ->  HashAggregate  (cost=963.44..967.94 rows=450 width=8) (actual time=1.527..1.595 rows=318 loops=1)
+         Group Key: i.id
+         Batches: 1  Memory Usage: 45kB
+         Buffers: shared hit=324
+         ->  Nested Loop  (cost=9.02..962.31 rows=450 width=8) (actual time=0.046..1.457 rows=318 loops=1)
+               Buffers: shared hit=324
+               ->  Bitmap Heap Scan on customers c  (cost=4.34..12.87 rows=9 width=8) (actual time=0.018..0.038 rows=9 loops=1)
+                     Recheck Cond: (owner_id = 50)
+                     Heap Blocks: exact=5
+                     Buffers: shared hit=7
+                     ->  Bitmap Index Scan on customers_owner_id_idx  (cost=0.00..4.34 rows=9 width=0) (actual time=0.008..0.008 rows=9 loops=1)
+                           Index Cond: (owner_id = 50)
+                           Buffers: shared hit=2
+               ->  Bitmap Heap Scan on invoices i  (cost=4.68..104.99 rows=50 width=16) (actual time=0.022..0.151 rows=35 loops=9)
+                     Recheck Cond: (customer_id = c.id)
+                     Heap Blocks: exact=299
+                     Buffers: shared hit=317
+                     ->  Bitmap Index Scan on invoices_customer_id_idx  (cost=0.00..4.67 rows=50 width=0) (actual time=0.012..0.012 rows=35 loops=9)
+                           Index Cond: (customer_id = c.id)
+                           Buffers: shared hit=18
+   ->  Index Scan using line_items_invoice_id_idx on line_items li  (cost=0.42..1.02 rows=12 width=37) (actual time=0.008..0.034 rows=10 loops=318)
+         Index Cond: (invoice_id = i.id)
+         Buffers: shared hit=4266
+ Planning:
+   Buffers: shared hit=272
+ Planning Time: 1.088 ms
+ Execution Time: 13.185 ms
+(29 rows)
+
+Time: 15.947 ms
+RESET
+Time: 0.257 ms
+RESET
+Time: 0.214 ms
+=== Probe 1b: B with all joins off, nested loop only ===
+SET
+Time: 0.205 ms
+SET
+Time: 0.204 ms
+SET
+Time: 0.208 ms
+                                                                     QUERY PLAN                                                                      
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=963.86..1482.17 rows=4500 width=37) (actual time=0.246..2.422 rows=3317 loops=1)
+   Buffers: shared hit=4590
+   ->  HashAggregate  (cost=963.44..967.94 rows=450 width=8) (actual time=0.242..0.272 rows=318 loops=1)
+         Group Key: i.id
+         Batches: 1  Memory Usage: 45kB
+         Buffers: shared hit=324
+         ->  Nested Loop  (cost=9.02..962.31 rows=450 width=8) (actual time=0.019..0.202 rows=318 loops=1)
+               Buffers: shared hit=324
+               ->  Bitmap Heap Scan on customers c  (cost=4.34..12.87 rows=9 width=8) (actual time=0.008..0.011 rows=9 loops=1)
+                     Recheck Cond: (owner_id = 50)
+                     Heap Blocks: exact=5
+                     Buffers: shared hit=7
+                     ->  Bitmap Index Scan on customers_owner_id_idx  (cost=0.00..4.34 rows=9 width=0) (actual time=0.004..0.004 rows=9 loops=1)
+                           Index Cond: (owner_id = 50)
+                           Buffers: shared hit=2
+               ->  Bitmap Heap Scan on invoices i  (cost=4.68..104.99 rows=50 width=16) (actual time=0.005..0.019 rows=35 loops=9)
+                     Recheck Cond: (customer_id = c.id)
+                     Heap Blocks: exact=299
+                     Buffers: shared hit=317
+                     ->  Bitmap Index Scan on invoices_customer_id_idx  (cost=0.00..4.67 rows=50 width=0) (actual time=0.002..0.002 rows=35 loops=9)
+                           Index Cond: (customer_id = c.id)
+                           Buffers: shared hit=18
+   ->  Index Scan using line_items_invoice_id_idx on line_items li  (cost=0.42..1.02 rows=12 width=37) (actual time=0.002..0.006 rows=10 loops=318)
+         Index Cond: (invoice_id = i.id)
+         Buffers: shared hit=4266
+ Planning Time: 0.099 ms
+ Execution Time: 2.553 ms
+(27 rows)
+
+Time: 2.927 ms
+RESET
+Time: 0.177 ms
+RESET
+Time: 0.158 ms
+RESET
+Time: 0.143 ms

@@ -1,0 +1,66 @@
+SET
+Timing is on.
+=== Variant B with the heaviest owner (owner_id = 1) ===
+                                                                        QUERY PLAN                                                                         
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=1029.07..9102.93 rows=52500 width=37) (actual time=10.959..51.378 rows=50760 loops=1)
+   Buffers: shared hit=66504
+   ->  HashAggregate  (cost=1028.64..1081.14 rows=5250 width=8) (actual time=10.918..11.626 rows=5141 loops=1)
+         Group Key: i.id
+         Batches: 1  Memory Usage: 465kB
+         Buffers: shared hit=378
+         ->  Hash Join  (cost=15.71..1015.52 rows=5250 width=8) (actual time=0.120..9.808 rows=5141 loops=1)
+               Hash Cond: (i.customer_id = c.id)
+               Buffers: shared hit=378
+               ->  Seq Scan on invoices i  (cost=0.00..868.00 rows=50000 width=16) (actual time=0.009..4.310 rows=50000 loops=1)
+                     Buffers: shared hit=368
+               ->  Hash  (cost=14.40..14.40 rows=105 width=8) (actual time=0.093..0.094 rows=105 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 13kB
+                     Buffers: shared hit=10
+                     ->  Bitmap Heap Scan on customers c  (cost=5.09..14.40 rows=105 width=8) (actual time=0.028..0.069 rows=105 loops=1)
+                           Recheck Cond: (owner_id = 1)
+                           Heap Blocks: exact=8
+                           Buffers: shared hit=10
+                           ->  Bitmap Index Scan on customers_owner_id_idx  (cost=0.00..5.06 rows=105 width=0) (actual time=0.016..0.016 rows=105 loops=1)
+                                 Index Cond: (owner_id = 1)
+                                 Buffers: shared hit=2
+   ->  Index Scan using line_items_invoice_id_idx on line_items li  (cost=0.42..1.42 rows=11 width=37) (actual time=0.002..0.007 rows=10 loops=5141)
+         Index Cond: (invoice_id = i.id)
+         Buffers: shared hit=66126
+ Planning:
+   Buffers: shared hit=315
+ Planning Time: 1.343 ms
+ Execution Time: 52.991 ms
+(28 rows)
+
+Time: 55.663 ms
+=== Variant A with the heaviest owner (owner_id = 1) ===
+                                                                     QUERY PLAN                                                                      
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=16.14..9037.31 rows=52500 width=37) (actual time=0.043..27.700 rows=50760 loops=1)
+   Buffers: shared hit=66504
+   ->  Hash Join  (cost=15.71..1015.52 rows=5250 width=8) (actual time=0.039..4.196 rows=5141 loops=1)
+         Hash Cond: (i.customer_id = c.id)
+         Buffers: shared hit=378
+         ->  Seq Scan on invoices i  (cost=0.00..868.00 rows=50000 width=16) (actual time=0.004..1.680 rows=50000 loops=1)
+               Buffers: shared hit=368
+         ->  Hash  (cost=14.40..14.40 rows=105 width=8) (actual time=0.030..0.031 rows=105 loops=1)
+               Buckets: 1024  Batches: 1  Memory Usage: 13kB
+               Buffers: shared hit=10
+               ->  Bitmap Heap Scan on customers c  (cost=5.09..14.40 rows=105 width=8) (actual time=0.010..0.023 rows=105 loops=1)
+                     Recheck Cond: (owner_id = 1)
+                     Heap Blocks: exact=8
+                     Buffers: shared hit=10
+                     ->  Bitmap Index Scan on customers_owner_id_idx  (cost=0.00..5.06 rows=105 width=0) (actual time=0.005..0.005 rows=105 loops=1)
+                           Index Cond: (owner_id = 1)
+                           Buffers: shared hit=2
+   ->  Index Scan using line_items_invoice_id_idx on line_items li  (cost=0.42..1.42 rows=11 width=37) (actual time=0.001..0.004 rows=10 loops=5141)
+         Index Cond: (invoice_id = i.id)
+         Buffers: shared hit=66126
+ Planning:
+   Buffers: shared hit=26
+ Planning Time: 0.173 ms
+ Execution Time: 28.836 ms
+(24 rows)
+
+Time: 29.532 ms

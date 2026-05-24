@@ -1,0 +1,155 @@
+SET
+Timing is on.
+BEGIN
+Time: 0.429 ms
+SET
+Time: 0.399 ms
+=== Probe 2a: Variant C with seq scan off ===
+SET
+Time: 0.315 ms
+                                                                      QUERY PLAN                                                                      
+------------------------------------------------------------------------------------------------------------------------------------------------------
+ Seq Scan on line_items  (cost=10000000000.00..10008325417.00 rows=250000 width=37) (actual time=0.564..312.149 rows=3317 loops=1)
+   Filter: EXISTS(SubPlan 7)
+   Rows Removed by Filter: 496683
+   Buffers: shared hit=1504174
+   SubPlan 7
+     ->  Index Scan using invoices_pkey on invoices i  (cost=0.29..16.63 rows=1 width=0) (actual time=0.001..0.001 rows=0 loops=500000)
+           Index Cond: (id = line_items.invoice_id)
+           Filter: (ANY (customer_id = (hashed SubPlan 6).col1))
+           Rows Removed by Filter: 1
+           Buffers: shared hit=1500007
+           SubPlan 6
+             ->  Result  (cost=4.40..12.93 rows=10 width=8) (actual time=0.030..0.044 rows=9 loops=1)
+                   One-Time Filter: (((InitPlan 5).col1)::integer = ((InitPlan 4).col1)::integer)
+                   Buffers: shared hit=7
+                   InitPlan 4
+                     ->  Result  (cost=0.00..0.01 rows=1 width=32) (actual time=0.004..0.004 rows=1 loops=1)
+                   InitPlan 5
+                     ->  Result  (cost=0.00..0.01 rows=1 width=32) (actual time=0.000..0.001 rows=1 loops=1)
+                   ->  Bitmap Heap Scan on customers c  (cost=4.40..12.93 rows=10 width=8) (actual time=0.027..0.039 rows=9 loops=1)
+                         Recheck Cond: (owner_id = ((InitPlan 4).col1)::integer)
+                         Heap Blocks: exact=5
+                         Buffers: shared hit=7
+                         ->  Bitmap Index Scan on customers_owner_id_idx  (cost=0.00..4.36 rows=10 width=0) (actual time=0.013..0.013 rows=9 loops=1)
+                               Index Cond: (owner_id = ((InitPlan 4).col1)::integer)
+                               Buffers: shared hit=2
+ Planning:
+   Buffers: shared hit=196
+ Planning Time: 0.704 ms
+ Execution Time: 312.406 ms
+(29 rows)
+
+Time: 314.192 ms
+=== Probe 2b: Variant C, written as explicit JOIN by the user ===
+SET
+Time: 0.391 ms
+                                                                            QUERY PLAN                                                                            
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Result  (cost=5.41..55480.55 rows=1250 width=37) (actual time=0.053..3.386 rows=3317 loops=1)
+   One-Time Filter: (((InitPlan 22).col1)::integer = ((InitPlan 1).col1)::integer)
+   Buffers: shared hit=14560
+   InitPlan 1
+     ->  Result  (cost=0.00..0.01 rows=1 width=32) (actual time=0.000..0.000 rows=1 loops=1)
+   InitPlan 22
+     ->  Result  (cost=0.00..0.01 rows=1 width=32) (actual time=0.001..0.001 rows=1 loops=1)
+   ->  Nested Loop  (cost=5.41..55480.55 rows=1250 width=37) (actual time=0.049..3.239 rows=3317 loops=1)
+         Buffers: shared hit=14560
+         ->  Nested Loop  (cost=4.95..5214.77 rows=250 width=8) (actual time=0.034..0.204 rows=318 loops=1)
+               Buffers: shared hit=336
+               ->  Index Scan using customers_pkey on customers c  (cost=0.28..53.77 rows=10 width=8) (actual time=0.012..0.052 rows=9 loops=1)
+                     Filter: (owner_id = ((InitPlan 1).col1)::integer)
+                     Rows Removed by Filter: 991
+                     Buffers: shared hit=12
+               ->  Bitmap Heap Scan on invoices i  (cost=4.67..515.85 rows=25 width=16) (actual time=0.005..0.015 rows=35 loops=9)
+                     Recheck Cond: (customer_id = c.id)
+                     Filter: (ANY (customer_id = (hashed SubPlan 21).col1))
+                     Heap Blocks: exact=299
+                     Buffers: shared hit=324
+                     ->  Bitmap Index Scan on invoices_customer_id_idx  (cost=0.00..4.67 rows=50 width=0) (actual time=0.002..0.002 rows=35 loops=9)
+                           Index Cond: (customer_id = c.id)
+                           Buffers: shared hit=18
+                     SubPlan 21
+                       ->  Result  (cost=4.40..12.93 rows=10 width=8) (actual time=0.005..0.009 rows=9 loops=1)
+                             One-Time Filter: (((InitPlan 20).col1)::integer = ((InitPlan 19).col1)::integer)
+                             Buffers: shared hit=7
+                             InitPlan 19
+                               ->  Result  (cost=0.00..0.01 rows=1 width=32) (actual time=0.000..0.000 rows=1 loops=1)
+                             InitPlan 20
+                               ->  Result  (cost=0.00..0.01 rows=1 width=32) (actual time=0.000..0.000 rows=1 loops=1)
+                             ->  Bitmap Heap Scan on customers c_2  (cost=4.40..12.93 rows=10 width=8) (actual time=0.005..0.008 rows=9 loops=1)
+                                   Recheck Cond: (owner_id = ((InitPlan 19).col1)::integer)
+                                   Heap Blocks: exact=5
+                                   Buffers: shared hit=7
+                                   ->  Bitmap Index Scan on customers_owner_id_idx  (cost=0.00..4.36 rows=10 width=0) (actual time=0.003..0.003 rows=9 loops=1)
+                                         Index Cond: (owner_id = ((InitPlan 19).col1)::integer)
+                                         Buffers: shared hit=2
+         ->  Index Scan using line_items_invoice_id_idx on line_items li  (cost=0.42..201.00 rows=6 width=37) (actual time=0.002..0.009 rows=10 loops=318)
+               Index Cond: (invoice_id = i.id)
+               Filter: EXISTS(SubPlan 8)
+               Buffers: shared hit=14224
+               SubPlan 8
+                 ->  Index Scan using invoices_pkey on invoices i_1  (cost=0.29..16.63 rows=1 width=0) (actual time=0.000..0.000 rows=1 loops=3317)
+                       Index Cond: (id = li.invoice_id)
+                       Filter: (ANY (customer_id = (hashed SubPlan 7).col1))
+                       Buffers: shared hit=9958
+                       SubPlan 7
+                         ->  Result  (cost=4.40..12.93 rows=10 width=8) (actual time=0.003..0.005 rows=9 loops=1)
+                               One-Time Filter: (((InitPlan 6).col1)::integer = ((InitPlan 5).col1)::integer)
+                               Buffers: shared hit=7
+                               InitPlan 5
+                                 ->  Result  (cost=0.00..0.01 rows=1 width=32) (actual time=0.000..0.000 rows=1 loops=1)
+                               InitPlan 6
+                                 ->  Result  (cost=0.00..0.01 rows=1 width=32) (actual time=0.000..0.000 rows=1 loops=1)
+                               ->  Bitmap Heap Scan on customers c_1  (cost=4.40..12.93 rows=10 width=8) (actual time=0.003..0.004 rows=9 loops=1)
+                                     Recheck Cond: (owner_id = ((InitPlan 5).col1)::integer)
+                                     Heap Blocks: exact=5
+                                     Buffers: shared hit=7
+                                     ->  Bitmap Index Scan on customers_owner_id_idx  (cost=0.00..4.36 rows=10 width=0) (actual time=0.002..0.002 rows=9 loops=1)
+                                           Index Cond: (owner_id = ((InitPlan 5).col1)::integer)
+                                           Buffers: shared hit=2
+ Planning:
+   Buffers: shared hit=141
+ Planning Time: 0.332 ms
+ Execution Time: 3.551 ms
+(66 rows)
+
+Time: 4.314 ms
+=== Probe 2c: Variant C, with hashjoin/mergejoin off ===
+SET
+Time: 0.368 ms
+SET
+Time: 0.210 ms
+                                                                      QUERY PLAN                                                                      
+------------------------------------------------------------------------------------------------------------------------------------------------------
+ Seq Scan on line_items  (cost=0.00..8325417.00 rows=250000 width=37) (actual time=2.136..20.232 rows=3317 loops=1)
+   Filter: (ANY (invoice_id = (hashed SubPlan 14).col1))
+   Rows Removed by Filter: 496683
+   Buffers: shared hit=4542
+   SubPlan 14
+     ->  Seq Scan on invoices i  (cost=0.00..417118.00 rows=25000 width=8) (actual time=0.012..2.000 rows=318 loops=1)
+           Filter: (ANY (customer_id = (hashed SubPlan 13).col1))
+           Rows Removed by Filter: 49682
+           Buffers: shared hit=375
+           SubPlan 13
+             ->  Result  (cost=4.40..12.93 rows=10 width=8) (actual time=0.005..0.009 rows=9 loops=1)
+                   One-Time Filter: (((InitPlan 12).col1)::integer = ((InitPlan 11).col1)::integer)
+                   Buffers: shared hit=7
+                   InitPlan 11
+                     ->  Result  (cost=0.00..0.01 rows=1 width=32) (actual time=0.001..0.001 rows=1 loops=1)
+                   InitPlan 12
+                     ->  Result  (cost=0.00..0.01 rows=1 width=32) (actual time=0.000..0.000 rows=1 loops=1)
+                   ->  Bitmap Heap Scan on customers c  (cost=4.40..12.93 rows=10 width=8) (actual time=0.004..0.006 rows=9 loops=1)
+                         Recheck Cond: (owner_id = ((InitPlan 11).col1)::integer)
+                         Heap Blocks: exact=5
+                         Buffers: shared hit=7
+                         ->  Bitmap Index Scan on customers_owner_id_idx  (cost=0.00..4.36 rows=10 width=0) (actual time=0.003..0.003 rows=9 loops=1)
+                               Index Cond: (owner_id = ((InitPlan 11).col1)::integer)
+                               Buffers: shared hit=2
+ Planning Time: 0.081 ms
+ Execution Time: 20.359 ms
+(26 rows)
+
+Time: 20.848 ms
+COMMIT
+Time: 0.270 ms
