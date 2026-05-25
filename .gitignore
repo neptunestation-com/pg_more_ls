@@ -1,5 +1,6 @@
-# Gradle
+# Gradle / Kotlin
 .gradle/
+.kotlin/
 build/
 gradle/
 
