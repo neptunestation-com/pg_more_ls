@@ -5,6 +5,10 @@
 -- registered. These are sanity checks; behavioral tests live in
 -- adjacent files.
 
+-- pgTAP lives in the extensions schema. Set search_path at session
+-- level (before BEGIN) so it persists across the test's rollback.
+set search_path = public, extensions;
+
 begin;
 
 select plan(15);

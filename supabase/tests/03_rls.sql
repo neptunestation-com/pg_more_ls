@@ -7,6 +7,14 @@
 --   - A non-member cannot SELECT org_members rows for an org they
 --     don't belong to
 
+-- pgTAP lives in the extensions schema. Set search_path at session
+-- level (before BEGIN) so it persists across the test's rollback.
+set search_path = public, extensions;
+
+-- Direct inserts into auth.users require postgres-level access,
+-- which the CLI test runner's default login role doesn't have.
+set role postgres;
+
 begin;
 
 select plan(4);
