@@ -1,0 +1,53 @@
+name: pages-deploy
+
+# Builds the frontend with the production VITE_API_URL baked in and
+# deploys to Cloudflare Pages via wrangler on every push to main.
+
+on:
+  push:
+    branches: [main]
+    # Skip redeploys for changes that don't affect the bundle.
+    paths:
+      - 'web/**'
+      - '.github/workflows/pages-deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci --no-fund --no-audit
+
+      - name: Build (with prod VITE_API_URL)
+        working-directory: web
+        env:
+          VITE_SUPABASE_URL:      ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_API_URL:           ${{ secrets.VITE_API_URL }}
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages
+        run: npx wrangler pages deploy web/dist --project-name pgpe-poc --branch main
+        env:
+          CLOUDFLARE_API_TOKEN:  ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

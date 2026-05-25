@@ -1,0 +1,44 @@
+name: fly-deploy
+
+# Deploys the engine services (api + worker, one image, two
+# processes per fly.toml) on every push to main. The build runs on
+# Fly's remote builder so no Docker daemon is needed in CI.
+
+on:
+  push:
+    branches: [main]
+    # Only redeploy when something the deploy actually cares about
+    # changes. Pure docs changes (spec/, docs/, *.md) don't
+    # trigger a redeploy.
+    paths:
+      - 'engine/**'
+      - 'api/**'
+      - 'worker/**'
+      - 'docker/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'fly.toml'
+      - '.github/workflows/fly-deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: fly-deploy
+  cancel-in-progress: false  # never abort an in-flight prod deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
