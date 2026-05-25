@@ -5,14 +5,18 @@ Backend Postgres for the web app surface (see
 
 ## Current POC project
 
-- **Environment**: supabase.green (Supabase-internal unlimited staging)
-- **Project ref**: `vkvzbcikigubfxwujklv`
+- **Environment**: supabase.com (production environment)
+- **Org**: `supabase-demo` (org id `scivptaoxfrnvkuuippg`)
+- **Project ref**: `lqapmmlwmpffbqaqtvtc`
 - **Project name**: `pgpe-poc`
-- **Dashboard**: <https://supabase.green/dashboard/project/vkvzbcikigubfxwujklv>
-- **API base URL**: `https://vkvzbcikigubfxwujklv.supabase.red` (note `.red`, not `.green` — the dashboard and project APIs live on different domains in this environment)
-- **Direct DB host** (IPv6-only on this project): `db.vkvzbcikigubfxwujklv.supabase.red`
+- **Dashboard**: <https://supabase.com/dashboard/project/lqapmmlwmpffbqaqtvtc>
+- **API base URL**: `https://lqapmmlwmpffbqaqtvtc.supabase.co`
+- **Direct DB host**: `db.lqapmmlwmpffbqaqtvtc.supabase.co:5432` (IPv4 add-on enabled, so the direct host resolves from any network)
+- **Pooler (Supavisor)**: `aws-0-us-east-1.pooler.supabase.com:5432` (session mode); username format `postgres.lqapmmlwmpffbqaqtvtc`
 - **Region**: us-east-1 (East US, North Virginia)
 - **Size**: `micro`
+
+> **Migration history**: the POC originally lived at `vkvzbcikigubfxwujklv.supabase.green` (Supabase-internal staging). It was moved to supabase.com on 2026-05-25 because the staging environment's SMTP credentials were invalid, blocking magic-link sign-in. All migrations and tests replayed cleanly on the new project; the staging project is being deleted as part of the move.
 
 ## What's provisioned
 
@@ -72,33 +76,37 @@ in-database test framework. Each file declares a `plan(N)` and a set
 of assertions, wrapped in `begin; ... rollback;` so test side effects
 don't escape the transaction.
 
-The test runner uses `psql` under the hood. Supabase projects ship
-with the IPv4 add-on disabled by default, so the direct `db.<ref>.<tld>`
-hostname doesn't resolve — pass the Supavisor pooler URL explicitly
-via `--db-url`:
+With the IPv4 add-on enabled on the POC project, the canonical
+invocation works directly:
 
 ```bash
-PW=$(cat ~/.pgpe-supabase-db-password)
-supabase test db \
-  --db-url "postgresql://postgres.<project-ref>:${PW}@aws-0-<region>.pooler.supabase.<tld>:5432/postgres?sslmode=require" \
-  supabase/tests
+supabase test db --linked supabase/tests
 ```
 
-For the POC project that resolves to (one line):
+Expected output: `All tests successful.` (22 tests across three files).
 
-```
-postgresql://postgres.vkvzbcikigubfxwujklv:${PW}@aws-0-us-east-1.pooler.supabase.green:5432/postgres?sslmode=require
-```
+A couple of permission quirks worth knowing about (encoded in the test
+files themselves, so they "just work" — documented here for future
+test authors):
 
-Expected output: `All tests successful.` with the per-file count summary.
+- pgTAP is installed in the `extensions` schema. Each test file does
+  `set search_path = public, extensions;` at the top so unqualified
+  `plan()` / `has_table()` / etc. resolve.
+- `20260525171539_grant_extensions_usage.sql` grants USAGE on the
+  `extensions` schema to PUBLIC so the CLI's per-session test login
+  role (`cli_login_postgres`) can see the pgTAP functions.
+- Tests that need to insert into `auth.users` directly do
+  `set role postgres;` after setting search_path — `cli_login_postgres`
+  lacks USAGE on the `auth` schema, but it has membership in `postgres`
+  via Supabase's role hierarchy, so `set role` succeeds.
 
 **Note on enabling pgTAP**: the canonical Supabase pattern is to
 toggle the pgtap extension from the dashboard (Database → Extensions),
-not via a migration. This project enabled it through a migration
-(`20260525162123_enable_pgtap.sql`) for historical reasons — that's
-already applied to the POC, so no action needed. For *new* environments
-modeled on this one, prefer the dashboard toggle and drop the
-migration from the migrations directory before first push.
+not via a migration. This project enabled it through
+`20260525162123_enable_pgtap.sql` for reproducibility — that migration
+is already applied. For *new* environments modeled on this one, the
+dashboard toggle is a fine alternative; either path lands in the same
+place.
 
 ### Run Supabase locally (optional)
 
@@ -116,9 +124,10 @@ supabase/
 ├── .gitignore       # excludes .temp, .branches, .env files
 ├── config.toml      # local-dev Supabase config (port assignments, etc.)
 ├── migrations/
-│   ├── 20260525154702_init.sql                 # pgmq + pgsodium + orgs/org_members + RLS
+│   ├── 20260525154702_init.sql                    # pgmq + pgsodium + orgs/org_members + RLS
 │   ├── 20260525161206_pgmq_placeholder_queue.sql  # q_placeholder pgmq queue
-│   └── 20260525162123_enable_pgtap.sql         # pgtap extension (see README note)
+│   ├── 20260525162123_enable_pgtap.sql            # pgtap extension (see README note)
+│   └── 20260525171539_grant_extensions_usage.sql  # USAGE on extensions schema for test login role
 ├── tests/
 │   ├── 01_schema.sql    # tables / RLS / helper / trigger sanity
 │   ├── 02_trigger.sql   # orgs_add_creator_as_owner behavior
