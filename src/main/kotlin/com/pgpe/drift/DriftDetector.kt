@@ -73,6 +73,9 @@ object DriftDetector {
         result = result.replace(Regex("'([^']*)'::text"), "'$1'")
         // PostgreSQL removes schema qualifications in stored expressions
         result = result.replace(Regex("\\bpublic\\."), "")
+        // PostgreSQL adds column aliases to scalar subqueries when decompiling
+        // (e.g. (SELECT current_setting('k')) becomes (SELECT current_setting('k') AS current_setting))
+        result = result.replace(Regex("\\s+AS\\s+\\w+"), "")
         // Repeatedly strip all non-essential parentheses
         var prev: String
         do {

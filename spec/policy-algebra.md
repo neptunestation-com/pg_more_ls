@@ -231,7 +231,9 @@ Where:
 
 - `session(key)` — retrieves a runtime session variable via PostgreSQL's
   `current_setting(key)`. Example: `session('app.tenant_id')` compiles to
-  `current_setting('app.tenant_id')`.
+  `(SELECT current_setting('app.tenant_id'))`, with a `::T` cast appended
+  when used in a comparison against a non-text column of type `T`
+  (§ 10.2, `session_expr`).
 
 - `lit(v)` — a literal constant value: string, integer, boolean, or null.
   Example: `lit('admin')`, `lit(42)`, `lit(true)`.
@@ -913,7 +915,7 @@ CREATE POLICY tenant_isolation_via_project ON tasks
   USING (EXISTS (
     SELECT 1 FROM projects
     WHERE projects.id = tasks.project_id
-      AND projects.tenant_id = current_setting('app.tenant_id')
+      AND projects.tenant_id = (SELECT current_setting('app.tenant_id'))::uuid
   ));
 ```
 
@@ -1378,10 +1380,15 @@ Compilation is defined as structural recursion over the policy algebra's types.
 
 #### Compile Atom
 
+The compile_atom function consumes the table metadata context `M` (§ 6.2)
+in addition to the atom, so that `session(k)` references appearing in a
+column-comparison can be emitted with the column's PostgreSQL type cast.
+Let `type_of(x) = M.column(x).type` for the table under compilation.
+
 ```
-function compile_atom(a) → SQL expression:
+function compile_atom(a, M) → SQL expression:
     match a:
-        (col(x), =, session(k))     → "x = current_setting('k')"
+        (col(x), op, session(k))    → "x op session_expr(k, type_of(x))"
         (col(x), =, lit(v))         → "x = v"                      -- v quoted
         (col(x), !=, lit(v))        → "x <> v"
         (col(x), <, lit(v))         → "x < v"
@@ -1395,8 +1402,32 @@ function compile_atom(a) → SQL expression:
         (col(x), LIKE, lit(v))      → "x LIKE 'v'"
         (col(x), =, col(y))         → "x = y"
         (col(x), =, fn(f, args))    → "x = f(args)"
-        exists(rel, clause)          → compile_traversal(rel, clause)
+        exists(rel, clause)          → compile_traversal(rel, clause, M)
+
+function session_expr(k, type_T) → SQL expression:
+    base ← "(SELECT current_setting('k'))"
+    if type_T ∈ TextLikeTypes:        -- text, varchar, character varying, character
+        return base
+    return base + "::" + type_T
 ```
+
+The `(SELECT current_setting(...))` wrap forces PostgreSQL to evaluate
+the session lookup as an InitPlan once per query rather than per row,
+producing a cached scalar the planner can apply against indexed columns.
+The wrap is sound on every input regardless of the volatility of the
+session source.
+
+The explicit type cast is mandatory for non-text columns:
+`current_setting()` returns `text`, and PostgreSQL's operator resolution
+will not implicitly cast `text` to `uuid`, `integer`, `boolean`, or
+other concrete types — the `CREATE POLICY` statement fails at definition
+time without the cast. See the casting table in the Architecture
+Decision Record § 9.2 for the canonical mapping from column type to
+emitted cast suffix.
+
+For traversal atoms, the inner clause's column references are scoped to
+the *target* table of the relationship, so `type_of(·)` is evaluated
+against the target table's metadata, not the source table's.
 
 #### Compile Traversal
 
@@ -1473,9 +1504,13 @@ equals the set of rows satisfying `effective(T, CMD)`:*
 **Base case** (atoms). Each atom compiles to a SQL expression that evaluates to
 `true` on exactly the rows satisfying the atom's semantics:
 
-- `col(x) = session(k)` compiles to `x = current_setting('k')`. PostgreSQL
-  evaluates `current_setting('k')` at query time, returning the session value.
-  The comparison produces the same boolean result as the atom's denotation.
+- `col(x) = session(k)` compiles to `x = (SELECT current_setting('k'))::T`
+  where `T = type_of(x)` (omitted for text-like columns; see § 10.2
+  `session_expr`). PostgreSQL evaluates the wrapped `current_setting('k')`
+  as an InitPlan, caching the result for the duration of the query. The
+  cast resolves the `text`-to-`T` coercion that PostgreSQL's operator
+  catalog declares as explicit-only. The comparison produces the same
+  boolean result as the atom's denotation.
 
 - `col(x) = lit(v)` compiles to `x = v`. Direct correspondence.
 
@@ -1569,7 +1604,7 @@ CREATE POLICY tenant_isolation_projects
   ON public.projects
   AS PERMISSIVE
   FOR SELECT
-  USING (tenant_id = current_setting('app.tenant_id'));
+  USING (tenant_id = (SELECT current_setting('app.tenant_id'))::uuid);
 
 -- Restrictive: soft delete filter
 CREATE POLICY soft_delete_projects
@@ -1579,11 +1614,15 @@ CREATE POLICY soft_delete_projects
   USING (is_deleted = false);
 ```
 
+The `::uuid` suffix is emitted because `projects.tenant_id` is declared
+as `uuid` in the running example schema. For a text-typed column the
+cast would be omitted. See § 10.2 (`session_expr`).
+
 **Effective SQL predicate** (what PostgreSQL enforces):
 
 ```sql
 -- (OR of permissive) AND (AND of restrictive)
-(tenant_id = current_setting('app.tenant_id'))
+(tenant_id = (SELECT current_setting('app.tenant_id'))::uuid)
 AND
 (is_deleted = false)
 ```
@@ -2116,7 +2155,7 @@ CREATE POLICY tenant_isolation_users
   ON public.users
   AS PERMISSIVE
   FOR SELECT, INSERT, UPDATE, DELETE
-  USING (tenant_id = current_setting('app.tenant_id'));
+  USING (tenant_id = (SELECT current_setting('app.tenant_id'))::uuid);
 
 -- ============================================================
 -- projects
@@ -2128,7 +2167,7 @@ CREATE POLICY tenant_isolation_projects
   ON public.projects
   AS PERMISSIVE
   FOR SELECT, INSERT, UPDATE, DELETE
-  USING (tenant_id = current_setting('app.tenant_id'));
+  USING (tenant_id = (SELECT current_setting('app.tenant_id'))::uuid);
 
 CREATE POLICY soft_delete_projects
   ON public.projects
@@ -2149,7 +2188,7 @@ CREATE POLICY tenant_isolation_via_project_tasks
   USING (EXISTS (
     SELECT 1 FROM public.projects
     WHERE public.projects.id = public.tasks.project_id
-      AND public.projects.tenant_id = current_setting('app.tenant_id')
+      AND public.projects.tenant_id = (SELECT current_setting('app.tenant_id'))::uuid
   ));
 
 -- ============================================================
@@ -2162,7 +2201,7 @@ CREATE POLICY tenant_isolation_comments
   ON public.comments
   AS PERMISSIVE
   FOR SELECT, INSERT, UPDATE, DELETE
-  USING (tenant_id = current_setting('app.tenant_id'));
+  USING (tenant_id = (SELECT current_setting('app.tenant_id'))::uuid);
 
 -- ============================================================
 -- files
@@ -2177,7 +2216,7 @@ CREATE POLICY tenant_isolation_via_project_files
   USING (EXISTS (
     SELECT 1 FROM public.projects
     WHERE public.projects.id = public.files.project_id
-      AND public.projects.tenant_id = current_setting('app.tenant_id')
+      AND public.projects.tenant_id = (SELECT current_setting('app.tenant_id'))::uuid
   ));
 ```
 

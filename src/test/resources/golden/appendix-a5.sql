@@ -8,7 +8,7 @@ CREATE POLICY tenant_isolation_users
   ON public.users
   AS PERMISSIVE
   FOR ALL
-  USING (tenant_id = current_setting('app.tenant_id'));
+  USING (tenant_id = (SELECT current_setting('app.tenant_id'))::uuid);
 
 -- ============================================================
 -- projects
@@ -20,7 +20,7 @@ CREATE POLICY tenant_isolation_projects
   ON public.projects
   AS PERMISSIVE
   FOR ALL
-  USING (tenant_id = current_setting('app.tenant_id'));
+  USING (tenant_id = (SELECT current_setting('app.tenant_id'))::uuid);
 
 CREATE POLICY soft_delete_projects
   ON public.projects
@@ -41,7 +41,7 @@ CREATE POLICY tenant_isolation_via_project_tasks
   USING (EXISTS (
     SELECT 1 FROM public.projects
     WHERE public.projects.id = public.tasks.project_id
-      AND public.projects.tenant_id = current_setting('app.tenant_id')
+      AND public.projects.tenant_id = (SELECT current_setting('app.tenant_id'))::uuid
   ));
 
 -- ============================================================
@@ -54,7 +54,7 @@ CREATE POLICY tenant_isolation_comments
   ON public.comments
   AS PERMISSIVE
   FOR ALL
-  USING (tenant_id = current_setting('app.tenant_id'));
+  USING (tenant_id = (SELECT current_setting('app.tenant_id'))::uuid);
 
 -- ============================================================
 -- files
@@ -69,5 +69,5 @@ CREATE POLICY tenant_isolation_via_project_files
   USING (EXISTS (
     SELECT 1 FROM public.projects
     WHERE public.projects.id = public.files.project_id
-      AND public.projects.tenant_id = current_setting('app.tenant_id')
+      AND public.projects.tenant_id = (SELECT current_setting('app.tenant_id'))::uuid
   ));

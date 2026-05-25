@@ -113,29 +113,43 @@ class CompilerTest {
     }
 
     @Test
-    fun `compile simple atom`() {
+    fun `compile column-session atom emits InitPlan wrap and cast for uuid column`() {
         val atom = Atom.BinaryAtom(
             ValueSource.Col("tenant_id"),
             BinaryOp.EQ,
             ValueSource.Session("app.tenant_id")
         )
-        val sql = SqlCompiler.compileAtom(atom, "test_table")
-        sql shouldBe "tenant_id = current_setting('app.tenant_id')"
+        val usersTable = metadata.tables.first { it.name == "users" }
+        val sql = SqlCompiler.compileAtom(atom, usersTable, metadata)
+        sql shouldBe "tenant_id = (SELECT current_setting('app.tenant_id'))::uuid"
     }
 
     @Test
-    fun `compile boolean literal`() {
+    fun `compile column-session atom on text column emits InitPlan wrap without cast`() {
+        val atom = Atom.BinaryAtom(
+            ValueSource.Col("email"),
+            BinaryOp.EQ,
+            ValueSource.Session("app.user_email")
+        )
+        val usersTable = metadata.tables.first { it.name == "users" }
+        val sql = SqlCompiler.compileAtom(atom, usersTable, metadata)
+        sql shouldBe "email = (SELECT current_setting('app.user_email'))"
+    }
+
+    @Test
+    fun `compile boolean literal — no session, no wrap, no cast`() {
         val atom = Atom.BinaryAtom(
             ValueSource.Col("is_deleted"),
             BinaryOp.EQ,
             ValueSource.Lit(LiteralValue.BoolLit(false))
         )
-        val sql = SqlCompiler.compileAtom(atom, "test_table")
+        val projectsTable = metadata.tables.first { it.name == "projects" }
+        val sql = SqlCompiler.compileAtom(atom, projectsTable, metadata)
         sql shouldBe "is_deleted = false"
     }
 
     @Test
-    fun `compile traversal atom produces EXISTS subquery`() {
+    fun `compile traversal atom produces EXISTS subquery with cast on target column`() {
         val atom = Atom.TraversalAtom(
             Relationship(null, "project_id", "projects", "id"),
             Clause(setOf(
@@ -146,11 +160,12 @@ class CompilerTest {
                 )
             ))
         )
-        val sql = SqlCompiler.compileAtom(atom, "tasks")
+        val tasksTable = metadata.tables.first { it.name == "tasks" }
+        val sql = SqlCompiler.compileAtom(atom, tasksTable, metadata)
         sql shouldContain "EXISTS ("
         sql shouldContain "SELECT 1 FROM public.projects"
         sql shouldContain "public.projects.id = public.tasks.project_id"
-        sql shouldContain "public.projects.tenant_id = current_setting('app.tenant_id')"
+        sql shouldContain "public.projects.tenant_id = (SELECT current_setting('app.tenant_id'))::uuid"
     }
 
     @Test
