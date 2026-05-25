@@ -226,13 +226,17 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = false
+# (For magic-link / OTP sign-in this is effectively the magic link click,
+# so leaving true is the safer default.)
+enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
-max_frequency = "1s"
-# Number of characters used in the email OTP.
-otp_length = 6
+# Rate-limits spammy magic-link requests; matches Supabase's hosted default.
+max_frequency = "1m0s"
+# Number of characters used in the email OTP. 8 (Supabase hosted default) is
+# slightly more entropy than the supabase-init default of 6.
+otp_length = 8
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
