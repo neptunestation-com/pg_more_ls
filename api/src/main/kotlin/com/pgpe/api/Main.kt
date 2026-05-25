@@ -1,8 +1,9 @@
 package com.pgpe.api
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
+import com.auth0.jwk.JwkProviderBuilder
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.net.URI
+import java.util.concurrent.TimeUnit
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -74,31 +75,40 @@ fun Application.module() {
         allowHeader(HttpHeaders.ContentType)
     }
 
-    // JWT verification. Supabase signs end-user JWTs with HS256 using the
-    // project's JWT secret (Dashboard → Settings → API → JWT Settings).
-    // The same secret signs the anon / service_role keys, so this verifier
-    // accepts all three classes of caller — we distinguish authenticated
-    // users from service_role inside individual route handlers via the
-    // `role` claim.
-    val jwtSecret = System.getenv("SUPABASE_JWT_SECRET")
+    // JWT verification via JWKS. Modern Supabase projects sign end-user
+    // JWTs asymmetrically (ES256). The public keys are exposed at
+    // <SUPABASE_URL>/auth/v1/.well-known/jwks.json keyed by `kid`. We
+    // fetch + cache them via auth0/jwks-rsa and let Ktor's jwt plugin
+    // pick the right one per request based on the JWT header's `kid`.
+    //
+    // No shared signing secret involved — verification needs only the
+    // (publishable) public key. The legacy HS256 shared-secret path
+    // (Settings → API → JWT Settings → JWT Secret) doesn't apply on
+    // this project.
+    val supabaseUrl = System.getenv("SUPABASE_URL")
         ?: error(
-            "SUPABASE_JWT_SECRET is not set. Retrieve from the Supabase " +
-                "dashboard (Settings → API → JWT Settings) and add to " +
-                ".env.local locally / `flyctl secrets set` for prod.",
+            "SUPABASE_URL is not set. Set to the project's API base " +
+                "(e.g. https://<ref>.supabase.co) in .env.local locally " +
+                "and via flyctl secrets for prod.",
         )
+    val jwksUri = URI("$supabaseUrl/auth/v1/.well-known/jwks.json").toURL()
+    val issuer = "$supabaseUrl/auth/v1"
+
+    val jwkProvider = JwkProviderBuilder(jwksUri)
+        .cached(10, 24, TimeUnit.HOURS)
+        .rateLimited(10, 1, TimeUnit.MINUTES)
+        .build()
 
     install(Authentication) {
         jwt("supabase") {
             realm = "pgpe-api"
-            verifier(
-                JWT.require(Algorithm.HMAC256(jwtSecret))
-                    .acceptLeeway(5)
-                    .build(),
-            )
+            verifier(jwkProvider, issuer) {
+                acceptLeeway(5)
+            }
             validate { credential ->
-                // Token signature and expiry already verified above. Reject
-                // tokens missing a subject (the user id) — every legitimate
-                // Supabase JWT has one.
+                // Signature + issuer + expiry already verified above.
+                // Reject tokens missing a subject (the user id) — every
+                // legitimate Supabase JWT has one.
                 if (credential.payload.subject.isNullOrBlank()) {
                     null
                 } else {
