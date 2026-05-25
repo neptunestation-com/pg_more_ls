@@ -1,0 +1,59 @@
+# Local development stack wired to Supabase Cloud (ADR D8, D12).
+#
+# Brings up three services that mirror the Phase 0.4 verified
+# native-dev layout:
+#   - engine-api   :8080  (Ktor HTTP wrapping engine primitives)
+#   - engine-worker        (background pgmq poller, no exposed port)
+#   - web          :5173  (Vite dev server with HMR)
+#
+# All three read from ../.env.local (gitignored). Engine services
+# share one Dockerfile and one built image (`pgpe-engine:dev`),
+# matching the Fly.io two-process setup (ADR D14): same image,
+# different PROCESS_NAME entrypoint dispatch.
+#
+# Usage from the repo root:
+#   docker compose -f docker/docker-compose.yml up --build
+#
+# Or from inside docker/:
+#   docker compose up --build
+
+services:
+  engine-api:
+    build: &engine_build
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: pgpe-engine:dev
+    container_name: pgpe-api
+    env_file: ../.env.local
+    environment:
+      PROCESS_NAME: http
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  engine-worker:
+    build: *engine_build
+    image: pgpe-engine:dev
+    container_name: pgpe-worker
+    env_file: ../.env.local
+    environment:
+      PROCESS_NAME: worker
+    depends_on:
+      engine-api:
+        condition: service_started
+    restart: unless-stopped
+
+  web:
+    image: node:22-alpine
+    container_name: pgpe-web
+    working_dir: /app
+    command: sh -c "npm install --no-fund --no-audit && npm run dev -- --host 0.0.0.0 --port 5173"
+    env_file: ../.env.local
+    volumes:
+      - ../web:/app
+      # Anonymous volume keeps the container's Linux-built node_modules
+      # from being shadowed by the host's (potentially macOS-built) one.
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    restart: unless-stopped
