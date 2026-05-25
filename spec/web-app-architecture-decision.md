@@ -84,7 +84,7 @@ production deployment shape is deferred.
 └────────┬───────────────────┘                  │
          │                                       │
          └──────────────┬───────────────────────┘
-                        │ JDBC (read-only role)
+                        │ JDBC: read-only role for simulator; write role for deploy/reconcile
                         ▼
             ┌────────────────────────────┐
             │ Target PostgreSQL DB(s)     │
@@ -355,9 +355,17 @@ under three safeguards:
    SQL, session variables, timestamp, and row count returned.
 3. **Per-target opt-in**: when adding a target database, the user
    toggles "allow simulator over real data." If off, the simulator
-   refuses to query that target. Default is on for non-production
-   tags; off when the target is tagged production. (Tagging mechanism
-   is a v1 backend feature.)
+   refuses to query that target. The `target_databases` row carries
+   an `is_production` boolean; when true, the simulator opt-in
+   defaults to off and must be explicitly enabled per session.
+   Free-form tags (for environment grouping or other classification)
+   are deferred to v1.1 if other features need them.
+
+The simulator's read-only role is distinct from the role used by the
+`apply` and `reconcile` flows, which need write access to issue
+`CREATE POLICY` / `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` DDL
+against the target database. Two roles per target, two connection
+strings, scoped grants on each.
 
 Masking modes (column-level masking, anonymized row IDs, hide-by-default)
 are deferred to v1.1. The pitch demands real data demonstrability;
@@ -402,6 +410,13 @@ the primary development pattern for the next several months.
 - *Monorepo with strict package boundaries* (publish engine to a
   local registry, surfaces depend on the artifact) — rejected as
   overhead; we can adopt this later when boundaries become real.
+
+**Timing**: the engine source refactor (moving
+`src/main/kotlin/com/pgpe/` into `engine/src/main/kotlin/com/pgpe/`)
+is Phase 0 work in the phasing plan — done before any new surface
+code is written, so all subsequent web app PRs see the new layout
+from day one. Existing engine tests must continue to pass after the
+move; CI must be green before any surface work begins.
 
 ### D12. Engine deployment: Docker Compose for the POC
 
@@ -460,9 +475,12 @@ The engine HTTP service and the engine worker run on **Fly.io** from
 early in the POC. They share one Fly.io application with two
 processes (per Fly's `[processes]` config) — one process serves HTTP,
 the other polls pgmq. The same Docker image is used for both; the
-entry point differs by process name. Developers run the same services
-locally via Compose (D12) during daily iteration; the Fly.io
-deployment exists in parallel for shared demos and pitches.
+entry point differs by process name. Locally with Docker Compose
+(D12), the same shape is achieved by defining two `services:` entries
+that share the image with different commands — one for the HTTP
+process, one for the worker. Developers run those services locally
+during daily iteration; the Fly.io deployment exists in parallel for
+shared demos and pitches.
 
 The React frontend builds to a static bundle and is served from
 **Cloudflare Pages**. Cloudflare's global CDN handles asset delivery;
@@ -522,7 +540,7 @@ The decisions above produce the following deployable components:
 | Auth                 | Supabase Auth     | (managed)     | Bundled with Supabase                                                                                  |
 | Job queue            | pgmq (extension)  | (in PG)       | Inside the backend Postgres                                                                            |
 | Secret storage       | Supabase Vault    | (in PG)       | Target DB credentials, service-role tokens                                                             |
-| Docker orchestration | Docker Compose    | `docker/`     | Profiles: `cloud-dev`, `local-full`, `prod-selfhost`                                                   |
+| Docker orchestration | Docker Compose    | `docker/`     | Profile: `cloud-dev` (others deferred)                                                                 |
 | Supabase config      | Supabase CLI      | `supabase/`   | Migrations, seed data, RLS policies, generated types                                                   |
 
 Total custom-code surface: three deployables (frontend, API service,
