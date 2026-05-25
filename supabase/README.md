@@ -9,6 +9,8 @@ Backend Postgres for the web app surface (see
 - **Project ref**: `vkvzbcikigubfxwujklv`
 - **Project name**: `pgpe-poc`
 - **Dashboard**: <https://supabase.green/dashboard/project/vkvzbcikigubfxwujklv>
+- **API base URL**: `https://vkvzbcikigubfxwujklv.supabase.red` (note `.red`, not `.green` — the dashboard and project APIs live on different domains in this environment)
+- **Direct DB host** (IPv6-only on this project): `db.vkvzbcikigubfxwujklv.supabase.red`
 - **Region**: us-east-1 (East US, North Virginia)
 - **Size**: `micro`
 

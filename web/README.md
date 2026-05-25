@@ -47,7 +47,7 @@ client bundle.
 
 | Name                       | Required | Notes                                                     |
 |----------------------------|----------|-----------------------------------------------------------|
-| `VITE_SUPABASE_URL`        | yes      | POC: `https://vkvzbcikigubfxwujklv.supabase.green`        |
+| `VITE_SUPABASE_URL`        | yes      | POC: `https://vkvzbcikigubfxwujklv.supabase.red` (dashboard is `.green`, **API is `.red`**) |
 | `VITE_SUPABASE_ANON_KEY`   | yes      | Publishable; safe to ship to clients                       |
 | `VITE_API_URL`             | no       | Defaults to `http://localhost:8080` if unset               |
 
