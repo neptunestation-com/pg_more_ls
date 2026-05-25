@@ -23,6 +23,9 @@ Backend Postgres for the web app surface (see
 | `org_members` table| ✅          | Skeleton with RLS                                   |
 | Email auth         | ✅ (default) | Default Supabase Auth — magic link works out of box |
 | Google OAuth       | ⏳ deferred | Add when needed; see `docs/setup/supabase.md` §3    |
+| `pgtap` extension  | ✅          | For in-database tests; see "Running pgTAP tests"    |
+| `q_placeholder` queue | ✅       | pgmq queue the Phase 0.3 worker polls               |
+| pgTAP tests        | ✅          | Coverage for orgs/org_members schema, trigger, RLS  |
 | Vault secrets      | ⏳ Phase 0.3 onward | Target DB credentials land here              |
 | Feature tables     | ⏳ Phase 1+ | `target_databases`, `schema_tables`, etc.           |
 
@@ -60,6 +63,41 @@ supabase migration list
 
 Local and Remote columns should match for every row.
 
+### Run pgTAP tests
+
+Tests live in `supabase/tests/` and use the [pgTAP](https://pgtap.org/)
+in-database test framework. Each file declares a `plan(N)` and a set
+of assertions, wrapped in `begin; ... rollback;` so test side effects
+don't escape the transaction.
+
+The test runner uses `psql` under the hood. Supabase projects ship
+with the IPv4 add-on disabled by default, so the direct `db.<ref>.<tld>`
+hostname doesn't resolve — pass the Supavisor pooler URL explicitly
+via `--db-url`:
+
+```bash
+PW=$(cat ~/.pgpe-supabase-db-password)
+supabase test db \
+  --db-url "postgresql://postgres.<project-ref>:${PW}@aws-0-<region>.pooler.supabase.<tld>:5432/postgres?sslmode=require" \
+  supabase/tests
+```
+
+For the POC project that resolves to (one line):
+
+```
+postgresql://postgres.vkvzbcikigubfxwujklv:${PW}@aws-0-us-east-1.pooler.supabase.green:5432/postgres?sslmode=require
+```
+
+Expected output: `All tests successful.` with the per-file count summary.
+
+**Note on enabling pgTAP**: the canonical Supabase pattern is to
+toggle the pgtap extension from the dashboard (Database → Extensions),
+not via a migration. This project enabled it through a migration
+(`20260525162123_enable_pgtap.sql`) for historical reasons — that's
+already applied to the POC, so no action needed. For *new* environments
+modeled on this one, prefer the dashboard toggle and drop the
+migration from the migrations directory before first push.
+
 ### Run Supabase locally (optional)
 
 `supabase/config.toml` configures a local Supabase stack you can run
@@ -76,7 +114,13 @@ supabase/
 ├── .gitignore       # excludes .temp, .branches, .env files
 ├── config.toml      # local-dev Supabase config (port assignments, etc.)
 ├── migrations/
-│   └── 20260525154702_init.sql  # extensions + orgs + org_members + RLS
+│   ├── 20260525154702_init.sql                 # pgmq + pgsodium + orgs/org_members + RLS
+│   ├── 20260525161206_pgmq_placeholder_queue.sql  # q_placeholder pgmq queue
+│   └── 20260525162123_enable_pgtap.sql         # pgtap extension (see README note)
+├── tests/
+│   ├── 01_schema.sql    # tables / RLS / helper / trigger sanity
+│   ├── 02_trigger.sql   # orgs_add_creator_as_owner behavior
+│   └── 03_rls.sql       # member vs non-member visibility
 └── README.md        # this file
 ```
 
