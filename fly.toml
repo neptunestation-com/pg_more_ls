@@ -1,58 +1,44 @@
-# Fly.io app configuration for the pgpe engine services (api + worker).
+# fly.toml app configuration file generated for pgpe-engine-poc on 2026-05-25T11:01:28-07:00
 #
-# Per ADR D14: one Fly app, two processes sharing one Docker image,
-# dispatched via docker/entrypoint.sh. The api serves HTTP on 8080;
-# the worker has no public ports and polls pgmq continuously.
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
-# Deploy with: `flyctl deploy` (after `flyctl launch --copy-config
-# --no-deploy` and the secrets dance in docs/setup/fly.md).
 
-app = "pgpe-engine-poc"
-primary_region = "iad"   # us-east, near the Supabase project (us-east-1)
+app = 'pgpe-engine-poc'
+primary_region = 'iad'
 
 [build]
-  dockerfile = "docker/Dockerfile"
+  dockerfile = 'docker/Dockerfile'
 
-# Two process groups out of one image; entrypoint.sh dispatches on
-# the first arg. Fly passes the process name as CMD args while the
-# Dockerfile's ENTRYPOINT (entrypoint.sh) stays in place.
-[processes]
-  http   = "http"
-  worker = "worker"
-
-# App-wide env defaults. Sensitive values (URLs, keys, DB password)
-# are set via `flyctl secrets set` instead — see docs/setup/fly.md.
 [env]
-  PORT                   = "8080"
-  PGMQ_PLACEHOLDER_QUEUE = "q_placeholder"
-  WORKER_POLL_SECONDS    = "30"
+  PGMQ_PLACEHOLDER_QUEUE = 'q_placeholder'
+  PORT = '8080'
+  WORKER_POLL_SECONDS = '30'
 
-# Public HTTP routing applies only to the `http` process group.
+[processes]
+  http = 'http'
+  worker = 'worker'
+
 [http_service]
-  internal_port       = 8080
-  force_https         = true
-  auto_stop_machines  = "stop"   # idle machines stop to save money
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
-  processes           = ["http"]
+  processes = ['http']
 
   [http_service.concurrency]
-    type        = "connections"
-    hard_limit  = 50
-    soft_limit  = 25
+    type = 'connections'
+    hard_limit = 50
+    soft_limit = 25
 
   [[http_service.checks]]
-    grace_period = "15s"
-    interval     = "30s"
-    method       = "GET"
-    timeout      = "5s"
-    path         = "/healthz"
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '15s'
+    method = 'GET'
+    path = '/healthz'
 
-# VM sizing. JVM + Z3 needs more memory than the default; 1 GB is
-# the safer floor. shared-cpu-1x is the cheapest tier (~$5/mo per
-# machine at this size at time of writing — verify with `flyctl
-# platform vm-sizes`).
 [[vm]]
-  size      = "shared-cpu-1x"
-  memory    = "1gb"
-  processes = ["http", "worker"]
+  size = 'shared-cpu-1x'
+  memory = '1gb'
+  processes = ['http', 'worker']

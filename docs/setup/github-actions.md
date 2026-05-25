@@ -2,11 +2,11 @@
 
 Phase 0.8. Three workflows live in `.github/workflows/`:
 
-| Workflow | Trigger | What it does |
-|----------|---------|--------------|
-| `engine-ci.yml` | PR to `main`, push to `main` | Runs `gradle :engine:test` |
-| `fly-deploy.yml` | Push to `main` touching `engine/`, `api/`, `worker/`, `docker/`, or `fly.toml` | `flyctl deploy --remote-only` |
-| `pages-deploy.yml` | Push to `main` touching `web/` | Builds with prod env vars, `wrangler pages deploy` |
+| Workflow           | Trigger                                                                        | What it does                                       |
+|--------------------|--------------------------------------------------------------------------------|----------------------------------------------------|
+| `engine-ci.yml`    | PR to `main`, push to `main`                                                   | Runs `gradle :engine:test`                         |
+| `fly-deploy.yml`   | Push to `main` touching `engine/`, `api/`, `worker/`, `docker/`, or `fly.toml` | `flyctl deploy --remote-only`                      |
+| `pages-deploy.yml` | Push to `main` touching `web/`                                                 | Builds with prod env vars, `wrangler pages deploy` |
 
 Each deploy workflow also has `workflow_dispatch` so you can fire it
 manually from the **Actions** tab.
