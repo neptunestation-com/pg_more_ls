@@ -10,3 +10,5 @@ plugins {
 rootProject.name = "pg-policy-engine"
 
 include(":engine")
+include(":api")
+include(":worker")

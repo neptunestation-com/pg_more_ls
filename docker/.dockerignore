@@ -1,0 +1,28 @@
+# Keep the docker build context lean.
+
+# Gradle / build artifacts
+.gradle/
+**/build/
+gradle/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Docs / unused-at-runtime
+docs/
+spec/
+paper/
+explainer/
+policies/
+*.md
+LICENSE

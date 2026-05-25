@@ -11,6 +11,11 @@ gradle/
 # OS
 .DS_Store
 
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
 # mise
 .mise.toml
 mise.toml
