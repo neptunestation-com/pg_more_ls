@@ -128,20 +128,23 @@ flyctl machines list
 You should see two machines: one with process group `http`, one with
 `worker`. Both should show state `started`.
 
-Tail logs to confirm the worker is polling:
+Tail logs from both processes (current `flyctl` streams everything;
+filter client-side if you want one group):
 
 ```bash
-flyctl logs --process-group worker
-# -> ... alive — no messages on 'q_placeholder'
+flyctl logs                       # all processes, live tail (Ctrl-C to exit)
+flyctl logs | grep pgpe-worker    # worker only
+flyctl logs | grep pgpe-api       # api only
 ```
 
-And the api is serving:
+You should see:
 
-```bash
-flyctl logs --process-group http
-# -> ... Starting pgpe-api on 0.0.0.0:8080
-# -> ... Application started ...
-```
+- api: `Starting pgpe-api on 0.0.0.0:8080` then `Application started ...`
+- worker: `alive — no messages on 'q_placeholder'` every 30s
+
+(Per-process filtering via `--process-group` flags isn't supported by
+current `flyctl`. To inspect a specific machine, get its id from
+`flyctl machines list` and use `flyctl logs -i <machine-id>`.)
 
 ---
 
