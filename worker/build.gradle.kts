@@ -11,6 +11,7 @@ dependencies {
     implementation(project(":engine"))
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("org.postgresql:postgresql:42.7.4")
 
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.7")
