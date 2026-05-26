@@ -11,6 +11,109 @@ phase exits with a `v0.x.0-poc` tag.
 
 ---
 
+## [v0.1.0-poc] — Phase 1 exit (Schema Overlay) — 2026-05-25
+
+First user-facing feature shipped. A signed-in user can register a
+target PostgreSQL database, trigger introspection, and see its
+`public`-schema topology rendered as an interactive graph color-coded
+by RLS governance status. Closes vision-doc Feature 1.
+
+### Added
+
+**Backend schema** (Phase 1.1)
+- `target_databases`, `schema_tables`, `schema_columns`,
+  `schema_relationships` with RLS keyed off org membership.
+- `governance_status` generated column on `schema_tables` —
+  `'red'` (no RLS) or `'yellow'` (RLS on, no proofs run). Phase 4
+  will widen this to `'green'` once `proof_runs` lands.
+- Two SECURITY DEFINER helpers: `target_belongs_to_my_org` and
+  `target_belongs_to_my_owned_org`.
+- 36 new pgTAP tests; suite-wide total 58.
+
+**Vault wrappers** (Phase 1.2)
+- `set_target_db_password` / `get_target_db_password` — SECURITY
+  DEFINER, JWT-claim-gated inside, EXECUTE explicitly granted only
+  to `service_role` and revoked from `public` / `authenticated` /
+  `anon` to defeat Supabase's project-level default privileges.
+- Lesson encoded in commit history: inside SECURITY DEFINER,
+  `current_user` is the function owner — for the *caller* identity
+  read the JWT claim that PostgREST sets per-request.
+
+**JWT verification** (Phase 1.3)
+- Ktor api verifies Supabase JWTs via JWKS (the project signs ES256
+  asymmetrically — no shared secret). Lazy fetch + 24h cache.
+- All routes opt into auth by living inside `authenticate("supabase")
+  {...}`. `/healthz` stays public.
+- Placeholder endpoint `GET /api/v1/me` returns `{userId, role, email}`
+  from the JWT claims.
+
+**Target management endpoints + RPC wrappers** (Phase 1.4)
+- `POST /api/v1/targets`, `POST /api/v1/targets/{id}/introspect`,
+  `DELETE /api/v1/targets/{id}` — api is a thin proxy that forwards
+  the caller's Bearer JWT to PostgREST.
+- Three SECURITY DEFINER RPCs (`create_target`, `enqueue_introspect`,
+  `delete_target`) atomically do the cross-schema work (Vault, pgmq)
+  and check `auth.uid()` against org membership / ownership.
+- New `q_introspect` pgmq queue.
+- 21 new pgTAP tests; suite-wide total 93.
+
+**Introspect worker** (Phase 1.5)
+- Worker switched from `q_placeholder` polling to `q_introspect`.
+- Per job: load target row, decrypt password via Vault wrapper,
+  open per-target JDBC connection with timeouts, query
+  `information_schema` + `pg_class` for public-schema topology,
+  apply via DELETE-then-INSERT inside a backend transaction, stamp
+  `last_introspected_at`.
+- Errors are logged and the message archived (no retry/DLQ for
+  Phase 1 — that's a Phase 5 concern).
+
+**Frontend workspace shell** (Phase 1.6)
+- Header (project name + email + sign-out) + sidebar (orgs grouped
+  with their targets, live via Supabase Realtime) + main pane.
+- Add-target modal with full form (org/name/host/port/db/user/pw/
+  ssl_mode/is_production); POSTs to the api endpoint from 1.4.
+- New users (no org memberships) land on a "create your first
+  organization" form; trigger auto-assigns them as owner.
+- Removed the Phase 0.4 `/healthz` debug card.
+
+**Schema overlay** (Phase 1.7)
+- React Flow graph (`@xyflow/react`) of the target's public schema,
+  auto-laid-out with dagre (left-to-right).
+- Custom `TableNode` shows table name, RLS pill, first 5 columns
+  with types ("…N more" if truncated). Border color tracks
+  `governance_status`.
+- FK edges labeled `source_col → target_col`.
+- "Refresh schema" button calls `enqueueIntrospect`; the worker
+  processes the job and Realtime repaints the graph when
+  `schema_*` rows update.
+- Legend explains the color codes (with green dimmed until Phase 4).
+
+### Known gaps
+
+- Drift detection / timeline (Phase 5 wishlist)
+- Proof status surfacing — `governance_status` stays at red/yellow
+  until Phase 4 wires the `proof_runs` table
+- Per-target "Delete" / "Edit" gestures aren't in the UI yet; the
+  `DELETE /api/v1/targets/{id}` endpoint works via curl, but no
+  button calls it
+- pgTAP suite still not in CI (needs an ephemeral test database
+  story)
+- Frontend has no tests yet (Vitest setup deferred again)
+- Branch-protection "1 approving review" requirement was removed
+  mid-Phase-0 because we're a single-contributor POC; reinstate
+  when collaborators join
+
+### Migrations / breaking changes
+
+- Additive only — no schema renames or destructive changes.
+- `q_placeholder` pgmq queue still exists in the project (created
+  in Phase 0.3) but the worker no longer polls it. Harmless;
+  cleanup deferred.
+
+[v0.1.0-poc]: https://github.com/dventimisupabase/pg-policy-engine/releases/tag/v0.1.0-poc
+
+---
+
 ## [v0.0.0-poc] — Phase 0 exit — 2026-05-25
 
 Infrastructure scaffolding for the web app surface. No user-facing
