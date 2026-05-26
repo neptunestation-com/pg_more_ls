@@ -1,21 +1,14 @@
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
+import { useOrgs } from './hooks/useOrgs'
+import { useTargets } from './hooks/useTargets'
+import { CreateOrgForm } from './components/CreateOrgForm'
+import { Sidebar } from './components/Sidebar'
 import './App.css'
-
-type ApiCheck =
-  | { state: 'idle' }
-  | { state: 'loading' }
-  | { state: 'ok'; body: string }
-  | { state: 'error'; message: string }
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
-  const [email, setEmail] = useState('')
-  const [magicLinkStatus, setMagicLinkStatus] = useState<
-    'idle' | 'sending' | 'sent' | { error: string }
-  >('idle')
-  const [apiCheck, setApiCheck] = useState<ApiCheck>({ state: 'idle' })
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -25,106 +18,154 @@ function App() {
     return () => sub.subscription.unsubscribe()
   }, [])
 
-  async function sendMagicLink(e: React.FormEvent) {
+  if (!session) {
+    return <SignIn />
+  }
+  return <Workspaces session={session} />
+}
+
+function SignIn() {
+  const [email, setEmail] = useState('')
+  const [status, setStatus] = useState<
+    'idle' | 'sending' | 'sent' | { error: string }
+  >('idle')
+
+  async function send(e: React.FormEvent) {
     e.preventDefault()
-    setMagicLinkStatus('sending')
+    setStatus('sending')
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: window.location.origin },
     })
-    if (error) {
-      setMagicLinkStatus({ error: error.message })
-    } else {
-      setMagicLinkStatus('sent')
-    }
-  }
-
-  async function signOut() {
-    await supabase.auth.signOut()
-    setMagicLinkStatus('idle')
-    setApiCheck({ state: 'idle' })
-  }
-
-  async function callHealthz() {
-    setApiCheck({ state: 'loading' })
-    const baseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
-    try {
-      const res = await fetch(`${baseUrl}/healthz`, {
-        headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
-      })
-      const body = await res.text()
-      setApiCheck(
-        res.ok
-          ? { state: 'ok', body }
-          : { state: 'error', message: `HTTP ${res.status}: ${body}` },
-      )
-    } catch (err) {
-      setApiCheck({ state: 'error', message: (err as Error).message })
-    }
+    if (error) setStatus({ error: error.message })
+    else setStatus('sent')
   }
 
   return (
     <main className="container">
-      <header>
+      <header className="page-header">
         <h1>pg-policy-engine</h1>
-        <p className="tagline">Web app POC — Phase 0.4 scaffold</p>
+        <p className="tagline">Web app POC</p>
       </header>
 
-      {session ? (
-        <section className="card">
-          <h2>Signed in</h2>
-          <p>
-            as <strong>{session.user.email}</strong>
-          </p>
-          <button onClick={signOut}>Sign out</button>
-        </section>
-      ) : (
-        <section className="card">
-          <h2>Sign in</h2>
-          <p>Enter your email — we'll send a magic link.</p>
-          <form onSubmit={sendMagicLink}>
-            <input
-              type="email"
-              required
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={magicLinkStatus === 'sending' || magicLinkStatus === 'sent'}
-            />
-            <button
-              type="submit"
-              disabled={magicLinkStatus === 'sending' || magicLinkStatus === 'sent'}
-            >
-              {magicLinkStatus === 'sending' ? 'Sending…' : 'Send magic link'}
-            </button>
-          </form>
-          {magicLinkStatus === 'sent' && (
-            <p className="ok">Check your inbox for a sign-in link.</p>
-          )}
-          {typeof magicLinkStatus === 'object' && 'error' in magicLinkStatus && (
-            <p className="err">Error: {magicLinkStatus.error}</p>
-          )}
-        </section>
-      )}
-
       <section className="card">
-        <h2>Engine api</h2>
-        <p>
-          GETs <code>/healthz</code> on the Ktor service ({' '}
-          <code>{import.meta.env.VITE_API_URL ?? 'http://localhost:8080'}</code>
-          ).
-        </p>
-        <button onClick={callHealthz} disabled={apiCheck.state === 'loading'}>
-          {apiCheck.state === 'loading' ? 'Calling…' : 'Call /healthz'}
-        </button>
-        {apiCheck.state === 'ok' && (
-          <pre className="ok">{apiCheck.body}</pre>
-        )}
-        {apiCheck.state === 'error' && (
-          <pre className="err">{apiCheck.message}</pre>
+        <h2>Sign in</h2>
+        <p>Enter your email — we'll send a magic link.</p>
+        <form onSubmit={send}>
+          <input
+            type="email"
+            required
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={status === 'sending' || status === 'sent'}
+          />
+          <button
+            type="submit"
+            disabled={status === 'sending' || status === 'sent'}
+          >
+            {status === 'sending' ? 'Sending…' : 'Send magic link'}
+          </button>
+        </form>
+        {status === 'sent' && <p className="ok">Check your inbox for a sign-in link.</p>}
+        {typeof status === 'object' && 'error' in status && (
+          <p className="err">Error: {status.error}</p>
         )}
       </section>
     </main>
+  )
+}
+
+function Workspaces({ session }: { session: Session }) {
+  const { orgs, loading: orgsLoading } = useOrgs()
+  const { targets, loading: targetsLoading } = useTargets()
+  const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null)
+
+  const selectedTarget = targets.find((t) => t.id === selectedTargetId) ?? null
+
+  async function signOut() {
+    await supabase.auth.signOut()
+  }
+
+  return (
+    <div className="app-shell">
+      <header className="app-header">
+        <h1>pg-policy-engine</h1>
+        <div className="user-bar">
+          <span className="user-email">{session.user.email}</span>
+          <button onClick={signOut}>Sign out</button>
+        </div>
+      </header>
+
+      <div className="app-body">
+        {orgsLoading || targetsLoading ? (
+          <main className="main-area">
+            <p className="placeholder">Loading…</p>
+          </main>
+        ) : orgs.length === 0 ? (
+          <main className="main-area">
+            <CreateOrgForm user={session.user} />
+          </main>
+        ) : (
+          <>
+            <Sidebar
+              orgs={orgs}
+              targets={targets}
+              selectedTargetId={selectedTargetId}
+              onSelectTarget={setSelectedTargetId}
+            />
+            <main className="main-area">
+              {selectedTarget ? (
+                <WorkspaceView target={selectedTarget} />
+              ) : (
+                <div className="placeholder">
+                  <h2>Select a target from the sidebar</h2>
+                  <p>
+                    Or click "+ Add target" to register a new PostgreSQL
+                    database. The schema overlay (Phase 1.7) renders here
+                    once a target is selected.
+                  </p>
+                </div>
+              )}
+            </main>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function WorkspaceView({
+  target,
+}: {
+  target: { id: string; name: string; host: string; database: string; is_production: boolean; last_introspected_at: string | null }
+}) {
+  return (
+    <section className="workspace-view">
+      <header>
+        <h2>{target.name}</h2>
+        {target.is_production && <span className="prod-tag">prod</span>}
+      </header>
+      <dl className="target-meta">
+        <dt>Host</dt>
+        <dd>
+          <code>{target.host}</code>
+        </dd>
+        <dt>Database</dt>
+        <dd>
+          <code>{target.database}</code>
+        </dd>
+        <dt>Last introspected</dt>
+        <dd>
+          {target.last_introspected_at
+            ? new Date(target.last_introspected_at).toLocaleString()
+            : 'never'}
+        </dd>
+      </dl>
+      <p className="placeholder">
+        Schema overlay (Phase 1.7) will render here.
+      </p>
+    </section>
   )
 }
 
