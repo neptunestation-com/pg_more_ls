@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Modal } from './Modal'
 import { supabase } from '../lib/supabase'
 import type { Org } from '../hooks/useOrgs'
 import type { Target } from '../hooks/useTargets'
@@ -33,72 +34,69 @@ export function DeleteOrgModal({ org, targets, onClose, onDeleted }: Props) {
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div
-        className="modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="delete-org-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header>
-          <h2 id="delete-org-title">Delete organization</h2>
-          <button
-            className="icon-btn"
-            aria-label="Close"
-            onClick={onClose}
-            disabled={submitting}
-          >
-            ×
-          </button>
-        </header>
+    <Modal onClose={onClose} labelledBy="delete-org-title">
+      <header>
+        <h2 id="delete-org-title">Delete organization</h2>
+        <button
+          className="icon-btn"
+          aria-label="Close"
+          onClick={onClose}
+          disabled={submitting}
+        >
+          ×
+        </button>
+      </header>
 
-        <div className="modal-body">
-          <p>
-            You're about to permanently delete{' '}
-            <strong>{org.name}</strong>.
+      <div className="modal-body">
+        <p>
+          You're about to permanently delete <strong>{org.name}</strong>.
+        </p>
+        {targetCount > 0 ? (
+          <p className="warn">
+            This will also delete <strong>{targetCount}</strong>{' '}
+            {targetCount === 1 ? 'target database' : 'target databases'} and
+            all introspected schema data. Stored credentials in Vault will be
+            removed.
           </p>
-          {targetCount > 0 ? (
-            <p className="warn">
-              This will also delete <strong>{targetCount}</strong>{' '}
-              {targetCount === 1 ? 'target database' : 'target databases'} and
-              all introspected schema data. Stored credentials in Vault will be
-              removed.
-            </p>
-          ) : (
-            <p className="hint">This organization has no target databases.</p>
-          )}
-          <div className="form-row">
-            <label htmlFor="delete-org-confirm">
-              Type <code>{org.name}</code> to confirm:
-            </label>
-            <input
-              id="delete-org-confirm"
-              type="text"
-              value={confirmText}
-              onChange={(e) => setConfirmText(e.target.value)}
-              disabled={submitting}
-              placeholder={org.name}
-              autoFocus
-            />
-          </div>
-          {error && <p className="err">{error}</p>}
+        ) : (
+          <p className="hint">This organization has no target databases.</p>
+        )}
+        <div className="form-row">
+          <label htmlFor="delete-org-confirm">
+            Type <code>{org.name}</code> to confirm:
+          </label>
+          <input
+            id="delete-org-confirm"
+            type="text"
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            disabled={submitting}
+            placeholder={org.name}
+            // Autofocus the confirm input — in a just-opened modal the
+            // user's intent is to interact with the modal's primary
+            // control, and the wider page is not reachable. The lint
+            // rule guards against autofocus on form pages where it
+            // can yank a user mid-task; that's not this situation.
+            // eslint-disable-next-line jsx-a11y/no-autofocus
+            autoFocus
+          />
         </div>
-
-        <div className="modal-actions">
-          <button type="button" onClick={onClose} disabled={submitting}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={!confirmMatches || submitting}
-            className="danger"
-          >
-            {submitting ? 'Deleting…' : 'Delete organization'}
-          </button>
-        </div>
+        {error && <p className="err">{error}</p>}
       </div>
-    </div>
+
+      <div className="modal-actions">
+        <button type="button" onClick={onClose} disabled={submitting}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={!confirmMatches || submitting}
+          className="danger"
+        >
+          {submitting ? 'Deleting…' : 'Delete organization'}
+        </button>
+      </div>
+    </Modal>
   )
 }

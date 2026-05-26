@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { User } from '@supabase/supabase-js'
+import { Modal } from './Modal'
 import { supabase } from '../lib/supabase'
 
 interface Props {
@@ -34,65 +35,60 @@ export function AddOrgModal({ user, onClose, onCreated }: Props) {
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div
-        className="modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="add-org-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header>
-          <h2 id="add-org-title">New organization</h2>
-          <button
-            className="icon-btn"
-            aria-label="Close"
-            onClick={onClose}
-            disabled={submitting}
-          >
-            ×
+    <Modal onClose={onClose} labelledBy="add-org-title">
+      <header>
+        <h2 id="add-org-title">New organization</h2>
+        <button
+          className="icon-btn"
+          aria-label="Close"
+          onClick={onClose}
+          disabled={submitting}
+        >
+          ×
+        </button>
+      </header>
+
+      <form onSubmit={onSubmit}>
+        <div className="form-row">
+          <label htmlFor="add-org-name">Organization name</label>
+          <input
+            id="add-org-name"
+            type="text"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={locked}
+            // Autofocus the primary input — modal just opened, the
+            // user is here to type. See note in DeleteOrgModal.
+            // eslint-disable-next-line jsx-a11y/no-autofocus
+            autoFocus
+            placeholder="acme-corp"
+          />
+          <p className="hint">
+            You'll be added as the org's owner. Targets and members are
+            scoped to the org.
+          </p>
+        </div>
+
+        {error && <p className="err">{error}</p>}
+
+        <div className="modal-actions">
+          <button type="button" onClick={onClose} disabled={submitting}>
+            Cancel
           </button>
-        </header>
-
-        <form onSubmit={onSubmit}>
-          <div className="form-row">
-            <label htmlFor="add-org-name">Organization name</label>
-            <input
-              id="add-org-name"
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={locked}
-              autoFocus
-              placeholder="acme-corp"
-            />
-            <p className="hint">
-              You'll be added as the org's owner. Targets and members
-              are scoped to the org.
-            </p>
-          </div>
-
-          {error && <p className="err">{error}</p>}
-
-          <div className="modal-actions">
-            <button type="button" onClick={onClose} disabled={submitting}>
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="primary"
-              disabled={locked || !name.trim()}
-            >
-              {succeeded
-                ? 'Created'
-                : submitting
-                  ? 'Creating…'
-                  : 'Create organization'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          <button
+            type="submit"
+            className="primary"
+            disabled={locked || !name.trim()}
+          >
+            {succeeded
+              ? 'Created'
+              : submitting
+                ? 'Creating…'
+                : 'Create organization'}
+          </button>
+        </div>
+      </form>
+    </Modal>
   )
 }
