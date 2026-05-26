@@ -307,6 +307,17 @@ button:disabled {
   margin-top: 2px;
 }
 
+.sidebar-target-row {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.sidebar-target-row .sidebar-target {
+  flex: 1;
+  min-width: 0;
+}
+
 .sidebar-target {
   display: flex;
   align-items: center;
@@ -331,6 +342,32 @@ button:disabled {
 .sidebar-target.active {
   background: var(--hover-bg);
   border-color: var(--border);
+}
+
+.sidebar-target-delete {
+  flex: 0 0 auto;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.25rem 0.4rem;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 120ms, color 120ms, background 120ms;
+}
+
+.sidebar-target-delete:hover {
+  opacity: 1;
+  color: var(--err-text);
+  background: var(--err-bg);
+}
+
+.sidebar-target-delete:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .target-name {
