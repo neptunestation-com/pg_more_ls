@@ -27,6 +27,14 @@ CASCADE` chain cleans up `org_members`, `target_databases`, and the
 opens a typed-confirmation modal. 13 new pgTAP tests; suite-wide total
 106.
 
+**Target delete UI** — the Phase 1.4 `DELETE /api/v1/targets/{id}`
+endpoint + `delete_target` RPC was already wired but had no UI gesture.
+Sidebar now shows a × on each target row that opens a confirmation
+modal (lighter friction than the org variant — no typed gate, since
+target deletion is more routine and the api owner-check already
+prevents accidental cross-org damage). Production targets get an
+extra "this is flagged as production" callout in the modal.
+
 ---
 
 ## [v0.1.0-poc] — Phase 1 exit (Schema Overlay) — 2026-05-25
@@ -111,9 +119,8 @@ by RLS governance status. Closes vision-doc Feature 1.
 - Drift detection / timeline (Phase 5 wishlist)
 - Proof status surfacing — `governance_status` stays at red/yellow
   until Phase 4 wires the `proof_runs` table
-- Per-target "Delete" / "Edit" gestures aren't in the UI yet; the
-  `DELETE /api/v1/targets/{id}` endpoint works via curl, but no
-  button calls it
+- Per-target "Edit" gesture isn't in the UI yet (`Delete` shipped in
+  the Unreleased / post-Phase-1 hardening pass)
 - pgTAP suite still not in CI (needs an ephemeral test database
   story)
 - Frontend has no tests yet (Vitest setup deferred again)

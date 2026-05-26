@@ -3,6 +3,7 @@ import type { Org } from '../hooks/useOrgs'
 import type { Target } from '../hooks/useTargets'
 import { AddTargetModal } from './AddTargetModal'
 import { DeleteOrgModal } from './DeleteOrgModal'
+import { DeleteTargetModal } from './DeleteTargetModal'
 
 interface Props {
   orgs: Org[]
@@ -14,11 +15,13 @@ interface Props {
 export function Sidebar({ orgs, targets, selectedTargetId, onSelectTarget }: Props) {
   const [addModalOrgId, setAddModalOrgId] = useState<string | null>(null)
   const [deleteOrgId, setDeleteOrgId] = useState<string | null>(null)
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
 
   const deleteOrg = orgs.find((o) => o.id === deleteOrgId) ?? null
   const deleteOrgTargets = deleteOrg
     ? targets.filter((t) => t.org_id === deleteOrg.id)
     : []
+  const targetToDelete = targets.find((t) => t.id === deleteTargetId) ?? null
 
   return (
     <>
@@ -44,7 +47,7 @@ export function Sidebar({ orgs, targets, selectedTargetId, onSelectTarget }: Pro
               ) : (
                 <ul className="sidebar-targets">
                   {orgTargets.map((t) => (
-                    <li key={t.id}>
+                    <li key={t.id} className="sidebar-target-row">
                       <button
                         className={
                           t.id === selectedTargetId
@@ -59,6 +62,15 @@ export function Sidebar({ orgs, targets, selectedTargetId, onSelectTarget }: Pro
                             prod
                           </span>
                         )}
+                      </button>
+                      <button
+                        type="button"
+                        className="sidebar-target-delete"
+                        onClick={() => setDeleteTargetId(t.id)}
+                        aria-label={`Delete target ${t.name}`}
+                        title="Delete target"
+                      >
+                        ×
                       </button>
                     </li>
                   ))}
@@ -93,6 +105,14 @@ export function Sidebar({ orgs, targets, selectedTargetId, onSelectTarget }: Pro
           targets={deleteOrgTargets}
           onClose={() => setDeleteOrgId(null)}
           onDeleted={() => setDeleteOrgId(null)}
+        />
+      )}
+
+      {targetToDelete && (
+        <DeleteTargetModal
+          target={targetToDelete}
+          onClose={() => setDeleteTargetId(null)}
+          onDeleted={() => setDeleteTargetId(null)}
         />
       )}
     </>
