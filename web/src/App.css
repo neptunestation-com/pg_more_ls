@@ -412,6 +412,286 @@ button:disabled {
   color: var(--text);
 }
 
+.target-host {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* ----------------------------------------------------------------
+   Schema overlay (Phase 1.7) — React Flow graph + toolbar
+   ---------------------------------------------------------------- */
+
+.schema-overlay {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: calc(100vh - 200px);
+  min-height: 500px;
+}
+
+.overlay-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.overlay-status {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.overlay-status strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.overlay-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.overlay-pill {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+}
+
+.overlay-pill.ok {
+  background: var(--ok-bg);
+  color: var(--ok-text);
+  border: 1px solid var(--ok-border);
+}
+
+.overlay-pill.err {
+  background: var(--err-bg);
+  color: var(--err-text);
+  border: 1px solid var(--err-border);
+}
+
+.refresh-btn {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.85rem;
+}
+
+.overlay-canvas {
+  flex: 1;
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elev);
+  overflow: hidden;
+}
+
+.overlay-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 2rem;
+}
+
+.overlay-empty p {
+  margin: 0 0 0.5rem;
+  max-width: 380px;
+}
+
+.legend {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.legend-item.dimmed {
+  opacity: 0.5;
+}
+
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid currentColor;
+}
+
+.legend-swatch.status-red {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.legend-swatch.status-yellow {
+  background: #fef3c7;
+  border-color: #fcd34d;
+}
+
+.legend-swatch.status-green {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+}
+
+/* React Flow override: keep its CSS variables in line with ours */
+.react-flow {
+  background: transparent;
+}
+
+.react-flow__controls button {
+  background: var(--bg-elev);
+  border-color: var(--border) !important;
+  color: var(--text);
+}
+
+/* TableNode */
+.table-node {
+  width: 240px;
+  background: var(--bg-elev);
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.table-node.selected {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
+}
+
+.table-node.status-red {
+  border-color: #fca5a5;
+}
+.table-node.status-yellow {
+  border-color: #fbbf24;
+}
+.table-node.status-green {
+  border-color: #6ee7b7;
+}
+.table-node.status-gray {
+  border-color: var(--border-strong);
+}
+
+.table-node-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--hover-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.table-node-header strong {
+  font-weight: 600;
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-pill {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+}
+
+.status-pill.red {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.status-pill.yellow {
+  background: #fef3c7;
+  color: #b45309;
+}
+.status-pill.green {
+  background: #d1fae5;
+  color: #047857;
+}
+.status-pill.gray {
+  background: var(--code-bg);
+  color: var(--text-muted);
+}
+
+.table-node-body {
+  padding: 0.35rem 0.6rem 0.45rem;
+}
+
+.col-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  padding: 0.1rem 0;
+}
+
+.col-name {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.col-type {
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.col-more {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+@media (prefers-color-scheme: dark) {
+  .legend-swatch.status-red {
+    background: rgba(185, 28, 28, 0.4);
+    border-color: rgba(185, 28, 28, 0.7);
+  }
+  .legend-swatch.status-yellow {
+    background: rgba(146, 64, 14, 0.4);
+    border-color: rgba(146, 64, 14, 0.7);
+  }
+  .legend-swatch.status-green {
+    background: rgba(4, 120, 87, 0.4);
+    border-color: rgba(4, 120, 87, 0.7);
+  }
+  .status-pill.red {
+    background: rgba(185, 28, 28, 0.25);
+    color: #fca5a5;
+  }
+  .status-pill.yellow {
+    background: rgba(146, 64, 14, 0.25);
+    color: #fbbf24;
+  }
+  .status-pill.green {
+    background: rgba(4, 120, 87, 0.25);
+    color: #6ee7b7;
+  }
+  .table-node.status-red {
+    border-color: #fca5a5;
+  }
+  .table-node.status-yellow {
+    border-color: #fbbf24;
+  }
+  .table-node.status-green {
+    border-color: #6ee7b7;
+  }
+}
+
 /* ----------------------------------------------------------------
    Modal
    ---------------------------------------------------------------- */
