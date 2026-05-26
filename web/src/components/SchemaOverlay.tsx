@@ -116,13 +116,18 @@ export function SchemaOverlay({ targetId, lastIntrospectedAt }: Props) {
 
       <div className="legend">
         <span className="legend-item">
-          <span className="legend-swatch status-red" /> no RLS
+          <span className="legend-swatch status-red" aria-hidden="true" />
+          <span className="legend-glyph" aria-hidden="true">⚠</span>
+          no RLS (dashed)
         </span>
         <span className="legend-item">
-          <span className="legend-swatch status-yellow" /> RLS on (no proofs yet)
+          <span className="legend-swatch status-yellow" aria-hidden="true" />
+          RLS on, no proofs yet (solid)
         </span>
         <span className="legend-item dimmed">
-          <span className="legend-swatch status-green" /> proven safe — Phase 4
+          <span className="legend-swatch status-green" aria-hidden="true" />
+          <span className="legend-glyph" aria-hidden="true">✓</span>
+          proven safe (double) — Phase 4
         </span>
       </div>
     </div>

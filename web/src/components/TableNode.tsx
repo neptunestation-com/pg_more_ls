@@ -21,7 +21,7 @@ export function TableNode({ data, selected }: NodeProps) {
       <div className="table-node-header">
         <strong title={`${d.schemaName}.${d.tableName}`}>{d.tableName}</strong>
         <span className={`status-pill ${d.governanceStatus}`}>
-          {d.hasRls ? (d.rlsForced ? 'rls forced' : 'rls') : 'no rls'}
+          {pillContent(d)}
         </span>
       </div>
       <div className="table-node-body">
@@ -40,4 +40,27 @@ export function TableNode({ data, selected }: NodeProps) {
       <Handle type="source" position={Position.Right} />
     </div>
   )
+}
+
+function pillContent(d: TableNodeData) {
+  // Pair an icon with the text so the status is conveyed without
+  // relying on color alone. RLS-on doesn't carry a glyph — the word
+  // "rls" is already the affirmative signal.
+  if (!d.hasRls) {
+    return (
+      <>
+        <span className="glyph" aria-hidden="true">⚠</span>
+        no rls
+      </>
+    )
+  }
+  if (d.governanceStatus === 'green') {
+    return (
+      <>
+        <span className="glyph" aria-hidden="true">✓</span>
+        proven
+      </>
+    )
+  }
+  return d.rlsForced ? 'rls forced' : 'rls'
 }

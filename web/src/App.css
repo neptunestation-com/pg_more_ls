@@ -26,6 +26,19 @@
   --hover-bg: #f3f4f6;
   --prod: #b45309;
   --prod-bg: #fef3c7;
+  /* Governance status — one source of truth for legend, table border,
+     and pill. Border style is paired with color in component CSS so
+     hue is never the only signal: dashed=no-RLS, solid=RLS-on,
+     double=proven. */
+  --status-red-border: #ef4444;
+  --status-red-bg:     #fef2f2;
+  --status-red-text:   #b91c1c;
+  --status-yellow-border: #f59e0b;
+  --status-yellow-bg:     #fef3c7;
+  --status-yellow-text:   #92400e;
+  --status-green-border: #10b981;
+  --status-green-bg:     #d1fae5;
+  --status-green-text:   #047857;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -50,6 +63,15 @@
     --hover-bg: #1f1f1f;
     --prod: #fbbf24;
     --prod-bg: rgba(120, 53, 15, 0.4);
+    --status-red-border: #f87171;
+    --status-red-bg:     rgba(239, 68, 68, 0.18);
+    --status-red-text:   #fca5a5;
+    --status-yellow-border: #fbbf24;
+    --status-yellow-bg:     rgba(245, 158, 11, 0.18);
+    --status-yellow-text:   #fcd34d;
+    --status-green-border: #34d399;
+    --status-green-bg:     rgba(16, 185, 129, 0.18);
+    --status-green-text:   #6ee7b7;
   }
 }
 
@@ -617,25 +639,41 @@ button:disabled {
 }
 
 .legend-swatch {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 3px;
-  border: 1px solid currentColor;
+  /* Border width matches table-node so swatches read as the same
+     visual language. Border style is per-status. */
+  border: 2px solid currentColor;
+  flex-shrink: 0;
 }
 
 .legend-swatch.status-red {
-  background: #fee2e2;
-  border-color: #fca5a5;
+  background: var(--status-red-bg);
+  border-color: var(--status-red-border);
+  border-style: dashed;
 }
 
 .legend-swatch.status-yellow {
-  background: #fef3c7;
-  border-color: #fcd34d;
+  background: var(--status-yellow-bg);
+  border-color: var(--status-yellow-border);
+  border-style: solid;
 }
 
 .legend-swatch.status-green {
-  background: #d1fae5;
-  border-color: #6ee7b7;
+  background: var(--status-green-bg);
+  border-color: var(--status-green-border);
+  /* `double` needs >=3px width to be visible */
+  border-width: 3px;
+  border-style: double;
+}
+
+.legend-glyph {
+  display: inline-block;
+  width: 1em;
+  text-align: center;
+  margin-right: 0.15rem;
+  color: currentColor;
 }
 
 /* React Flow override: keep its CSS variables in line with ours */
@@ -664,17 +702,21 @@ button:disabled {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
 }
 
+/* Border style as the non-color status signal — dashed/solid/double
+   so colorblind / monochrome viewers can still distinguish governance
+   states. Stay in sync with .legend-swatch.* above. */
 .table-node.status-red {
-  border-color: #fca5a5;
+  border: 2px dashed var(--status-red-border);
 }
 .table-node.status-yellow {
-  border-color: #fbbf24;
+  border: 2px solid var(--status-yellow-border);
 }
 .table-node.status-green {
-  border-color: #6ee7b7;
+  /* `double` requires >=3px to render the gap */
+  border: 3px double var(--status-green-border);
 }
 .table-node.status-gray {
-  border-color: var(--border-strong);
+  border: 2px solid var(--border-strong);
 }
 
 .table-node-header {
@@ -705,20 +747,26 @@ button:disabled {
 }
 
 .status-pill.red {
-  background: #fee2e2;
-  color: #b91c1c;
+  background: var(--status-red-bg);
+  color: var(--status-red-text);
 }
 .status-pill.yellow {
-  background: #fef3c7;
-  color: #b45309;
+  background: var(--status-yellow-bg);
+  color: var(--status-yellow-text);
 }
 .status-pill.green {
-  background: #d1fae5;
-  color: #047857;
+  background: var(--status-green-bg);
+  color: var(--status-green-text);
 }
 .status-pill.gray {
   background: var(--code-bg);
   color: var(--text-muted);
+}
+
+.status-pill .glyph {
+  display: inline-block;
+  margin-right: 0.15rem;
+  font-weight: 700;
 }
 
 .table-node-body {
@@ -749,42 +797,6 @@ button:disabled {
 .col-more {
   color: var(--text-muted);
   font-style: italic;
-}
-
-@media (prefers-color-scheme: dark) {
-  .legend-swatch.status-red {
-    background: rgba(185, 28, 28, 0.4);
-    border-color: rgba(185, 28, 28, 0.7);
-  }
-  .legend-swatch.status-yellow {
-    background: rgba(146, 64, 14, 0.4);
-    border-color: rgba(146, 64, 14, 0.7);
-  }
-  .legend-swatch.status-green {
-    background: rgba(4, 120, 87, 0.4);
-    border-color: rgba(4, 120, 87, 0.7);
-  }
-  .status-pill.red {
-    background: rgba(185, 28, 28, 0.25);
-    color: #fca5a5;
-  }
-  .status-pill.yellow {
-    background: rgba(146, 64, 14, 0.25);
-    color: #fbbf24;
-  }
-  .status-pill.green {
-    background: rgba(4, 120, 87, 0.25);
-    color: #6ee7b7;
-  }
-  .table-node.status-red {
-    border-color: #fca5a5;
-  }
-  .table-node.status-yellow {
-    border-color: #fbbf24;
-  }
-  .table-node.status-green {
-    border-color: #6ee7b7;
-  }
 }
 
 /* ----------------------------------------------------------------
