@@ -2,8 +2,6 @@ package com.pgpe.api
 
 import com.auth0.jwk.JwkProviderBuilder
 import io.github.oshai.kotlinlogging.KotlinLogging
-import java.net.URI
-import java.util.concurrent.TimeUnit
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
@@ -20,11 +18,18 @@ import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.calllogging.CallLogging
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
+import io.ktor.server.request.receive
 import io.ktor.server.response.respond
+import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
+import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import java.net.URI
+import java.util.concurrent.TimeUnit
 
 private val logger = KotlinLogging.logger {}
 
@@ -40,6 +45,25 @@ data class MeResponse(
 
 @Serializable
 data class ErrorResponse(val error: String)
+
+@Serializable
+data class CreateTargetRequest(
+    val orgId: String,
+    val name: String,
+    val host: String,
+    val port: Int = 5432,
+    val database: String,
+    val username: String,
+    val password: String,
+    val isProduction: Boolean = false,
+    val sslMode: String = "require",
+)
+
+@Serializable
+data class CreateTargetResponse(val id: String)
+
+@Serializable
+data class EnqueueIntrospectResponse(val msgId: Long)
 
 fun main() {
     val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
@@ -75,22 +99,11 @@ fun Application.module() {
         allowHeader(HttpHeaders.ContentType)
     }
 
-    // JWT verification via JWKS. Modern Supabase projects sign end-user
-    // JWTs asymmetrically (ES256). The public keys are exposed at
-    // <SUPABASE_URL>/auth/v1/.well-known/jwks.json keyed by `kid`. We
-    // fetch + cache them via auth0/jwks-rsa and let Ktor's jwt plugin
-    // pick the right one per request based on the JWT header's `kid`.
-    //
-    // No shared signing secret involved — verification needs only the
-    // (publishable) public key. The legacy HS256 shared-secret path
-    // (Settings → API → JWT Settings → JWT Secret) doesn't apply on
-    // this project.
     val supabaseUrl = System.getenv("SUPABASE_URL")
-        ?: error(
-            "SUPABASE_URL is not set. Set to the project's API base " +
-                "(e.g. https://<ref>.supabase.co) in .env.local locally " +
-                "and via flyctl secrets for prod.",
-        )
+        ?: error("SUPABASE_URL is not set.")
+    val supabaseAnonKey = System.getenv("SUPABASE_ANON_KEY")
+        ?: error("SUPABASE_ANON_KEY is not set.")
+
     val jwksUri = URI("$supabaseUrl/auth/v1/.well-known/jwks.json").toURL()
     val issuer = "$supabaseUrl/auth/v1"
 
@@ -99,6 +112,8 @@ fun Application.module() {
         .rateLimited(10, 1, TimeUnit.MINUTES)
         .build()
 
+    val postgrest = PostgRest(baseUrl = supabaseUrl, anonKey = supabaseAnonKey)
+
     install(Authentication) {
         jwt("supabase") {
             realm = "pgpe-api"
@@ -106,14 +121,8 @@ fun Application.module() {
                 acceptLeeway(5)
             }
             validate { credential ->
-                // Signature + issuer + expiry already verified above.
-                // Reject tokens missing a subject (the user id) — every
-                // legitimate Supabase JWT has one.
-                if (credential.payload.subject.isNullOrBlank()) {
-                    null
-                } else {
-                    JWTPrincipal(credential.payload)
-                }
+                if (credential.payload.subject.isNullOrBlank()) null
+                else JWTPrincipal(credential.payload)
             }
             challenge { _, _ ->
                 call.respond(
@@ -125,12 +134,10 @@ fun Application.module() {
     }
 
     routing {
-        // Public routes — no auth required.
         get("/healthz") {
             call.respond(HealthResponse(status = "ok"))
         }
 
-        // Authenticated routes. Phase 1.4 adds target management here.
         authenticate("supabase") {
             route("/api/v1") {
                 get("/me") {
@@ -143,6 +150,76 @@ fun Application.module() {
                             email = payload.getClaim("email").asString(),
                         ),
                     )
+                }
+
+                post("/targets") {
+                    val req = call.receive<CreateTargetRequest>()
+                    val jwt = call.bearerJwtOrReject() ?: return@post
+                    val rpcBody = buildJsonObject {
+                        put("p_org_id", JsonPrimitive(req.orgId))
+                        put("p_name", JsonPrimitive(req.name))
+                        put("p_host", JsonPrimitive(req.host))
+                        put("p_port", JsonPrimitive(req.port))
+                        put("p_database", JsonPrimitive(req.database))
+                        put("p_username", JsonPrimitive(req.username))
+                        put("p_password", JsonPrimitive(req.password))
+                        put("p_is_production", JsonPrimitive(req.isProduction))
+                        put("p_ssl_mode", JsonPrimitive(req.sslMode))
+                    }
+                    val res = postgrest.callRpc("create_target", rpcBody, jwt)
+                    if (res.isSuccess) {
+                        // PostgREST returns the uuid as a JSON string literal `"..."`
+                        call.respond(
+                            HttpStatusCode.Created,
+                            CreateTargetResponse(id = res.body.trim().trim('"')),
+                        )
+                    } else {
+                        call.respondPostgrestError(res)
+                    }
+                }
+
+                post("/targets/{id}/introspect") {
+                    val targetId = call.parameters["id"]
+                        ?: return@post call.respond(
+                            HttpStatusCode.BadRequest,
+                            ErrorResponse("missing target id"),
+                        )
+                    val jwt = call.bearerJwtOrReject() ?: return@post
+                    val rpcBody = buildJsonObject {
+                        put("p_target_id", JsonPrimitive(targetId))
+                    }
+                    val res = postgrest.callRpc("enqueue_introspect", rpcBody, jwt)
+                    if (res.isSuccess) {
+                        val msgId = res.body.trim().toLongOrNull()
+                            ?: return@post call.respond(
+                                HttpStatusCode.InternalServerError,
+                                ErrorResponse("unexpected rpc response: ${res.body}"),
+                            )
+                        call.respond(
+                            HttpStatusCode.Accepted,
+                            EnqueueIntrospectResponse(msgId = msgId),
+                        )
+                    } else {
+                        call.respondPostgrestError(res)
+                    }
+                }
+
+                delete("/targets/{id}") {
+                    val targetId = call.parameters["id"]
+                        ?: return@delete call.respond(
+                            HttpStatusCode.BadRequest,
+                            ErrorResponse("missing target id"),
+                        )
+                    val jwt = call.bearerJwtOrReject() ?: return@delete
+                    val rpcBody = buildJsonObject {
+                        put("p_target_id", JsonPrimitive(targetId))
+                    }
+                    val res = postgrest.callRpc("delete_target", rpcBody, jwt)
+                    if (res.isSuccess) {
+                        call.respond(HttpStatusCode.NoContent)
+                    } else {
+                        call.respondPostgrestError(res)
+                    }
                 }
             }
         }
