@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Org } from '../hooks/useOrgs'
 import type { Target } from '../hooks/useTargets'
 import { AddTargetModal } from './AddTargetModal'
+import { DeleteOrgModal } from './DeleteOrgModal'
 
 interface Props {
   orgs: Org[]
@@ -12,6 +13,12 @@ interface Props {
 
 export function Sidebar({ orgs, targets, selectedTargetId, onSelectTarget }: Props) {
   const [addModalOrgId, setAddModalOrgId] = useState<string | null>(null)
+  const [deleteOrgId, setDeleteOrgId] = useState<string | null>(null)
+
+  const deleteOrg = orgs.find((o) => o.id === deleteOrgId) ?? null
+  const deleteOrgTargets = deleteOrg
+    ? targets.filter((t) => t.org_id === deleteOrg.id)
+    : []
 
   return (
     <>
@@ -22,6 +29,15 @@ export function Sidebar({ orgs, targets, selectedTargetId, onSelectTarget }: Pro
             <section key={org.id} className="sidebar-org">
               <header>
                 <h3>{org.name}</h3>
+                <button
+                  type="button"
+                  className="sidebar-org-delete"
+                  onClick={() => setDeleteOrgId(org.id)}
+                  aria-label={`Delete organization ${org.name}`}
+                  title="Delete organization"
+                >
+                  ×
+                </button>
               </header>
               {orgTargets.length === 0 ? (
                 <p className="sidebar-empty">No targets yet</p>
@@ -68,6 +84,15 @@ export function Sidebar({ orgs, targets, selectedTargetId, onSelectTarget }: Pro
             setAddModalOrgId(null)
             onSelectTarget(id)
           }}
+        />
+      )}
+
+      {deleteOrg && (
+        <DeleteOrgModal
+          org={deleteOrg}
+          targets={deleteOrgTargets}
+          onClose={() => setDeleteOrgId(null)}
+          onDeleted={() => setDeleteOrgId(null)}
         />
       )}
     </>

@@ -11,6 +11,24 @@ phase exits with a `v0.x.0-poc` tag.
 
 ---
 
+## [Unreleased] — Phase 1 hardening
+
+Bug-fix / hardening pass between Phase 1 and Phase 2. No new features;
+no migration of existing data.
+
+### Added
+
+**Org delete** — `public.delete_org(p_org_id uuid)` SECURITY DEFINER RPC.
+Verifies the caller is an owner of the org, removes any Vault secrets
+referenced by the org's targets (FK CASCADE doesn't reach into the
+`vault` schema), then deletes the org row; the existing `ON DELETE
+CASCADE` chain cleans up `org_members`, `target_databases`, and the
+`schema_*` snapshot rows. Sidebar grows a small × per org header that
+opens a typed-confirmation modal. 13 new pgTAP tests; suite-wide total
+106.
+
+---
+
 ## [v0.1.0-poc] — Phase 1 exit (Schema Overlay) — 2026-05-25
 
 First user-facing feature shipped. A signed-in user can register a
