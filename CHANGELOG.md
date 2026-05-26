@@ -57,6 +57,21 @@ any org had no way to create another. Sidebar now has a
 "+ Add organization" button at the bottom that opens an `AddOrgModal`
 with the same anti-duplicate locking as the empty-state form.
 
+**Schema overlay status: color unification + non-color signal** —
+the legend swatches, table borders, and status pills now share a
+single source of truth via `--status-{red,yellow,green}-{border,bg,text}`
+CSS variables (previously three different yellows etc., none of
+which matched). On top of the color fix, governance status now
+carries a *non-color* signal so the encoding is usable by viewers
+with red-green colorblindness or on monochrome displays: table
+borders are **dashed** for no-RLS, **solid** for RLS-on, **double**
+for proven-safe. Status pills gain a small `⚠` glyph for no-RLS and
+`✓` for proven-safe. The legend mirrors all of it (same border
+style, same glyphs) so users can scan a table → legend match without
+relying on hue. The pill text (`no rls` / `rls` / `proven`) already
+carries semantic meaning for screen readers; the glyphs are
+`aria-hidden`.
+
 ---
 
 ## [v0.1.0-poc] — Phase 1 exit (Schema Overlay) — 2026-05-25
