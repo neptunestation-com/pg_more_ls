@@ -249,6 +249,32 @@ button:disabled {
   font-size: 0.85rem;
 }
 
+.link-button {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text);
+  text-decoration: none;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+}
+
+.link-button:hover {
+  background: var(--hover-bg);
+}
+
+.dev-pill {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.1rem 0.4rem;
+  margin-left: 0.4rem;
+  border-radius: 3px;
+  background: var(--prod-bg);
+  color: var(--prod);
+  vertical-align: middle;
+}
+
 .app-body {
   display: flex;
   flex: 1;
