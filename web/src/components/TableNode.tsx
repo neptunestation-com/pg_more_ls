@@ -36,7 +36,8 @@ export function TableNode({ data, selected }: NodeProps) {
           <div
             key={c.name}
             className="col-row"
-            title={`${c.name} ${c.dataType}`}
+            data-tooltip={`${c.name} ${c.dataType}`}
+            aria-label={`${c.name} ${c.dataType}`}
           >
             <span className="col-name">{c.name}</span>
             <span className="col-type">{c.dataType}</span>
