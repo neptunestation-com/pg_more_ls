@@ -16,6 +16,20 @@ phase exits with a `v0.x.0-poc` tag.
 Bug-fix / hardening pass between Phase 1 and Phase 2. No new features;
 no migration of existing data.
 
+### Changed
+
+**Blueprint design tokens** — visual overhaul via CSS variables only,
+no JSX or per-component refactor. Bold aesthetic shift commits to a
+"technical draftsman / blueprint" voice: IBM Plex Sans for body +
+IBM Plex Mono for headings, labels, buttons, and code; warm-paper
+light background with deep-ink text; dark mode swaps to deep ink
+with warm-paper text; Supabase green primary accent (brand-aligned
+for pitch) + draftsman cyan focus ring; tabular numerals globally;
+hairline borders and sharp 0 corners everywhere (no rounding, no
+drop shadows on cards). Preserves all functionality, a11y, and the
+governance status color encoding (red/dashed, amber/solid,
+green/double).
+
 ### Added
 
 **Org delete** — `public.delete_org(p_org_id uuid)` SECURITY DEFINER RPC.
