@@ -33,7 +33,11 @@ export function TableNode({ data, selected }: NodeProps) {
       </div>
       <div className="table-node-body">
         {d.columns.slice(0, 5).map((c) => (
-          <div key={c.name} className="col-row">
+          <div
+            key={c.name}
+            className="col-row"
+            title={`${c.name} ${c.dataType}`}
+          >
             <span className="col-name">{c.name}</span>
             <span className="col-type">{c.dataType}</span>
           </div>

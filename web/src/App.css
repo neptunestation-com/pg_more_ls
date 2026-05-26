@@ -822,6 +822,12 @@ button:disabled {
 }
 
 .col-name {
+  /* flex: 1 1 0; min-width: 0 lets the name shrink below its
+     intrinsic min-content width — required for ellipsis truncation
+     inside a flex container to actually fire. Without min-width: 0,
+     flex children refuse to shrink past one whole word. */
+  flex: 1 1 0;
+  min-width: 0;
   color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -829,6 +835,13 @@ button:disabled {
 }
 
 .col-type {
+  flex: 0 1 auto;
+  /* Cap the type so a long type name (e.g. `timestamp with time zone`,
+     14 chars when rendered) can't crowd out the column name. */
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--text-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }

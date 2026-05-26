@@ -57,6 +57,16 @@ any org had no way to create another. Sidebar now has a
 "+ Add organization" button at the bottom that opens an `AddOrgModal`
 with the same anti-duplicate locking as the empty-state form.
 
+**Column-name truncation in TableNode** — names like `created_at` /
+`created_by` were getting clipped to "created…" even when they would
+have fit in the node. Two fixes: (1) `min-width: 0` on `.col-name`
+so the flex item can actually shrink past its intrinsic word-width
+(default `min-width: auto` prevents that); (2) tooltip on each
+`col-row` showing `name dataType` so the full text is always
+recoverable for long names. Also caps `.col-type` at 45% width so an
+exotic long type can't crowd out the column name. Verified against
+the `wide` fixture on `/dev/overlay`.
+
 **Vitest + initial logic tests** — Vitest + `@testing-library/react`
 + `jsdom` wired into `web/`. Two pure-logic modules extracted so
 they're testable without rendering: `lib/tablePill.ts` (governance
