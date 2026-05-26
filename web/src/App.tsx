@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import { useOrgs } from './hooks/useOrgs'
 import { useTargets } from './hooks/useTargets'
 import { CreateOrgForm } from './components/CreateOrgForm'
+import { OverlayDemo } from './components/OverlayDemo'
 import { SchemaOverlay } from './components/SchemaOverlay'
 import { Sidebar } from './components/Sidebar'
 import './App.css'
@@ -18,6 +19,13 @@ function App() {
     )
     return () => sub.subscription.unsubscribe()
   }, [])
+
+  // Unauth'd visual harness — no sign-in required, no real data fetched.
+  // Cloudflare Pages' SPA fallback serves index.html for unknown paths,
+  // so this works as a deep link in production too.
+  if (window.location.pathname.startsWith('/dev/overlay')) {
+    return <OverlayDemo />
+  }
 
   if (!session) {
     return <SignIn />

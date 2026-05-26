@@ -57,6 +57,24 @@ any org had no way to create another. Sidebar now has a
 "+ Add organization" button at the bottom that opens an `AddOrgModal`
 with the same anti-duplicate locking as the empty-state form.
 
+**`/dev/overlay` visual-test route** — fixtures-based harness for
+`SchemaGraph`. Mounted at `/dev/overlay` (no auth, no real data
+fetched; Cloudflare Pages' SPA fallback handles the deep link).
+Picker on the left switches between synthetic snapshots: empty,
+single table, wide-with-long-names, parallel FKs, linear chain,
+hub-and-spoke, all-status-variants, cyclic FKs, and a 20-table
+schema. Unblocks visual regression testing for overlay changes
+without needing to introspect a real PostgreSQL database. Add new
+scenarios in `src/lib/overlayFixtures.ts`. Also doubles as a pitch
+asset: the page works as a static gallery of the kinds of schemas
+the overlay renders.
+
+Refactor underneath: `SchemaOverlay` split into a presentational
+`SchemaGraph` (snapshot in → canvas + legend out, used by both the
+production overlay and the demo) and the existing toolbar +
+data-fetching wrapper. `buildGraph` moves to `src/lib/schemaGraph.ts`
+so it's importable from Vitest later (no React, no IO).
+
 **Schema overlay: parallel FK edges** — when a table had two FKs to
 the same target table (e.g. `friendships(user_a_id, user_b_id)`),
 React Flow's default bezier rendered both relationships on the same
