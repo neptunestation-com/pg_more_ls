@@ -67,6 +67,29 @@ recoverable for long names. Also caps `.col-type` at 45% width so an
 exotic long type can't crowd out the column name. Verified against
 the `wide` fixture on `/dev/overlay`.
 
+**A11y lint + shared Modal component** — `eslint-plugin-jsx-a11y`
+added to the web ESLint config. Initial run surfaced 19 errors,
+mostly from four modals (`AddOrg`, `AddTarget`, `DeleteOrg`,
+`DeleteTarget`) duplicating the click-on-backdrop pattern without a
+keyboard equivalent. Extracted a shared `<Modal>` component that:
+  - wraps the backdrop with `role="presentation"` (purely visual)
+  - keeps `role="dialog"` + `aria-modal="true"` on the dialog itself
+  - adds a `useEscapeKey` hook so Escape closes the modal alongside
+    click-outside
+  - centralizes the necessary eslint-disables with rationale, instead
+    of scattering them
+All four modals now use `<Modal>`; their bodies are pure
+content. Remaining intentional disables: `autoFocus` on modal inputs
+(legitimate UX in a just-opened modal) and `setState`-in-effect for
+clearing the snapshot on target-id change (intentional). Lint is
+clean: 0 errors, 0 warnings.
+
+Not addressed in this PR (deferred follow-ups): full keyboard
+navigation inside the React Flow canvas, screen-reader live regions
+for Realtime-driven updates, formal contrast audit. The linter+visual
+inspection covers the highest-impact issues; the rest deserve their
+own pass.
+
 **Vitest + initial logic tests** — Vitest + `@testing-library/react`
 + `jsdom` wired into `web/`. Two pure-logic modules extracted so
 they're testable without rendering: `lib/tablePill.ts` (governance

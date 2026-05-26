@@ -49,6 +49,11 @@ export function useSchemaSnapshot(targetId: string | null) {
 
   useEffect(() => {
     if (!targetId) {
+      // Clearing the snapshot synchronously is intentional: when the
+      // caller deselects a target, downstream consumers should see
+      // null on the very next render, not stale data. The one extra
+      // render this causes is fine; this isn't a hot path.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSnapshot(null)
       return
     }

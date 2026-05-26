@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Modal } from './Modal'
 import { createTarget } from '../lib/api'
 import type { Org } from '../hooks/useOrgs'
 
@@ -51,15 +52,8 @@ export function AddTargetModal({ orgs, defaultOrgId, onClose, onCreated }: Props
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div
-        className="modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="add-target-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header>
+    <Modal onClose={onClose} labelledBy="add-target-title">
+      <header>
           <h2 id="add-target-title">Add target database</h2>
           <button className="icon-btn" aria-label="Close" onClick={onClose}>
             ×
@@ -205,7 +199,6 @@ export function AddTargetModal({ orgs, defaultOrgId, onClose, onCreated }: Props
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   )
 }
