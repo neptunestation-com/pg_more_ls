@@ -1,21 +1,31 @@
 import { useState } from 'react'
+import type { User } from '@supabase/supabase-js'
 import type { Org } from '../hooks/useOrgs'
 import type { Target } from '../hooks/useTargets'
+import { AddOrgModal } from './AddOrgModal'
 import { AddTargetModal } from './AddTargetModal'
 import { DeleteOrgModal } from './DeleteOrgModal'
 import { DeleteTargetModal } from './DeleteTargetModal'
 
 interface Props {
+  user: User
   orgs: Org[]
   targets: Target[]
   selectedTargetId: string | null
   onSelectTarget: (id: string) => void
 }
 
-export function Sidebar({ orgs, targets, selectedTargetId, onSelectTarget }: Props) {
+export function Sidebar({
+  user,
+  orgs,
+  targets,
+  selectedTargetId,
+  onSelectTarget,
+}: Props) {
   const [addModalOrgId, setAddModalOrgId] = useState<string | null>(null)
   const [deleteOrgId, setDeleteOrgId] = useState<string | null>(null)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [addOrgOpen, setAddOrgOpen] = useState(false)
 
   const deleteOrg = orgs.find((o) => o.id === deleteOrgId) ?? null
   const deleteOrgTargets = deleteOrg
@@ -85,6 +95,12 @@ export function Sidebar({ orgs, targets, selectedTargetId, onSelectTarget }: Pro
             </section>
           )
         })}
+        <button
+          className="sidebar-add-org"
+          onClick={() => setAddOrgOpen(true)}
+        >
+          + Add organization
+        </button>
       </aside>
 
       {addModalOrgId && (
@@ -113,6 +129,14 @@ export function Sidebar({ orgs, targets, selectedTargetId, onSelectTarget }: Pro
           target={targetToDelete}
           onClose={() => setDeleteTargetId(null)}
           onDeleted={() => setDeleteTargetId(null)}
+        />
+      )}
+
+      {addOrgOpen && (
+        <AddOrgModal
+          user={user}
+          onClose={() => setAddOrgOpen(false)}
+          onCreated={() => setAddOrgOpen(false)}
         />
       )}
     </>

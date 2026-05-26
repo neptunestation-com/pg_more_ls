@@ -49,6 +49,14 @@ proximate cause — missing tables in `supabase_realtime` — was
 already fixed in `20260526010123_add_phase1_tables_to_realtime_publication.sql`;
 this is the form-side belt-and-braces.
 
+**Missing "Add organization" affordance** — Phase 1.6 shipped
+`CreateOrgForm` gated on `orgs.length === 0` (empty-state welcome
+screen) but never added a steady-state "+ Add organization" button
+for users who already have at least one org. A signed-in user with
+any org had no way to create another. Sidebar now has a
+"+ Add organization" button at the bottom that opens an `AddOrgModal`
+with the same anti-duplicate locking as the empty-state form.
+
 ---
 
 ## [v0.1.0-poc] — Phase 1 exit (Schema Overlay) — 2026-05-25
