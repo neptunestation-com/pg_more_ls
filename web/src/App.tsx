@@ -4,6 +4,7 @@ import { supabase } from './lib/supabase'
 import { useOrgs } from './hooks/useOrgs'
 import { useTargets } from './hooks/useTargets'
 import { CreateOrgForm } from './components/CreateOrgForm'
+import { SchemaOverlay } from './components/SchemaOverlay'
 import { Sidebar } from './components/Sidebar'
 import './App.css'
 
@@ -138,33 +139,28 @@ function Workspaces({ session }: { session: Session }) {
 function WorkspaceView({
   target,
 }: {
-  target: { id: string; name: string; host: string; database: string; is_production: boolean; last_introspected_at: string | null }
+  target: {
+    id: string
+    name: string
+    host: string
+    database: string
+    is_production: boolean
+    last_introspected_at: string | null
+  }
 }) {
   return (
     <section className="workspace-view">
       <header>
         <h2>{target.name}</h2>
         {target.is_production && <span className="prod-tag">prod</span>}
+        <span className="target-host">
+          <code>{target.host}</code> · <code>{target.database}</code>
+        </span>
       </header>
-      <dl className="target-meta">
-        <dt>Host</dt>
-        <dd>
-          <code>{target.host}</code>
-        </dd>
-        <dt>Database</dt>
-        <dd>
-          <code>{target.database}</code>
-        </dd>
-        <dt>Last introspected</dt>
-        <dd>
-          {target.last_introspected_at
-            ? new Date(target.last_introspected_at).toLocaleString()
-            : 'never'}
-        </dd>
-      </dl>
-      <p className="placeholder">
-        Schema overlay (Phase 1.7) will render here.
-      </p>
+      <SchemaOverlay
+        targetId={target.id}
+        lastIntrospectedAt={target.last_introspected_at}
+      />
     </section>
   )
 }
