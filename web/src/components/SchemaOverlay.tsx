@@ -4,12 +4,14 @@ import {
   Controls,
   ReactFlow,
   type Edge,
+  type EdgeTypes,
   type Node,
   type NodeTypes,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import dagre from 'dagre'
 import { TableNode, type TableNodeData } from './TableNode'
+import { ParallelEdge, type ParallelEdgeData } from './ParallelEdge'
 import { enqueueIntrospect } from '../lib/api'
 import {
   useSchemaSnapshot,
@@ -27,6 +29,7 @@ const NODE_WIDTH = 240
 const NODE_HEIGHT = 140
 
 const nodeTypes: NodeTypes = { table: TableNode }
+const edgeTypes: EdgeTypes = { parallel: ParallelEdge }
 
 export function SchemaOverlay({ targetId, lastIntrospectedAt }: Props) {
   const { snapshot, error } = useSchemaSnapshot(targetId)
@@ -101,6 +104,7 @@ export function SchemaOverlay({ targetId, lastIntrospectedAt }: Props) {
             nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             fitView
             proOptions={{ hideAttribution: true }}
             nodesDraggable
@@ -182,17 +186,36 @@ function buildGraph(
     }
   })
 
-  const edges: Edge[] = relationships.map((r) => ({
-    id: r.id,
-    source: r.source_table_id,
-    target: r.target_table_id,
-    label: `${r.source_column} → ${r.target_column}`,
-    labelStyle: { fontSize: 10, fill: 'var(--text-muted)' },
-    labelBgStyle: { fill: 'var(--bg-elev)' },
-    labelBgPadding: [3, 1],
-    labelBgBorderRadius: 3,
-    style: { stroke: 'var(--text-muted)', strokeWidth: 1.5 },
-  }))
+  // Group relationships by their (source, target) node pair so the
+  // custom edge type can fan parallel edges apart. With React Flow's
+  // default bezier, two edges with the same endpoints render on top
+  // of each other and one FK becomes invisible.
+  const bundleKeys = relationships.map(
+    (r) => `${r.source_table_id}\x00${r.target_table_id}`,
+  )
+  const bundleSize = new Map<string, number>()
+  for (const k of bundleKeys) bundleSize.set(k, (bundleSize.get(k) ?? 0) + 1)
+  const bundleIndex = new Map<string, number>()
+
+  const edges: Edge[] = relationships.map((r, i) => {
+    const key = bundleKeys[i]
+    const total = bundleSize.get(key)!
+    const idx = bundleIndex.get(key) ?? 0
+    bundleIndex.set(key, idx + 1)
+    const data: ParallelEdgeData = {
+      index: idx,
+      total,
+      label: `${r.source_column} → ${r.target_column}`,
+    }
+    return {
+      id: r.id,
+      source: r.source_table_id,
+      target: r.target_table_id,
+      type: 'parallel',
+      data: data as unknown as Record<string, unknown>,
+      style: { stroke: 'var(--text-muted)', strokeWidth: 1.5 },
+    }
+  })
 
   return { nodes, edges }
 }

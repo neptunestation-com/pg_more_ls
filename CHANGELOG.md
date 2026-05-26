@@ -57,6 +57,15 @@ any org had no way to create another. Sidebar now has a
 "+ Add organization" button at the bottom that opens an `AddOrgModal`
 with the same anti-duplicate locking as the empty-state form.
 
+**Schema overlay: parallel FK edges** — when a table had two FKs to
+the same target table (e.g. `friendships(user_a_id, user_b_id)`),
+React Flow's default bezier rendered both relationships on the same
+path and one column-pair was invisible. New `ParallelEdge` custom
+edge type groups relationships by `(source_table, target_table)` and
+fans the edges out perpendicular to the straight line (quadratic
+bezier, control point offset by `(index − (total − 1) / 2) × 35 px`).
+Single edges still route as a straight quadratic with zero offset.
+
 **Schema overlay status: color unification + non-color signal** —
 the legend swatches, table borders, and status pills now share a
 single source of truth via `--status-{red,yellow,green}-{border,bg,text}`
