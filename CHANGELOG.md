@@ -35,6 +35,20 @@ target deletion is more routine and the api owner-check already
 prevents accidental cross-org damage). Production targets get an
 extra "this is flagged as production" callout in the modal.
 
+### Fixed
+
+**CreateOrgForm anti-duplicate** — the form now enters a terminal
+`succeeded` state after a successful insert and stays locked until
+Realtime delivers the new orgs row and the parent unmounts it.
+Previously the button only disabled during the in-flight request
+(~500 ms); a user clicking through a Realtime stall could fire
+several sequential inserts before the form realized it had already
+won. Closes the failure mode that produced seven duplicate orgs in
+seven seconds during the Phase 1.7 dogfood test. The original
+proximate cause — missing tables in `supabase_realtime` — was
+already fixed in `20260526010123_add_phase1_tables_to_realtime_publication.sql`;
+this is the form-side belt-and-braces.
+
 ---
 
 ## [v0.1.0-poc] — Phase 1 exit (Schema Overlay) — 2026-05-25

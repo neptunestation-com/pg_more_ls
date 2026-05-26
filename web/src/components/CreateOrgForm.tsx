@@ -13,19 +13,31 @@ interface Props {
 export function CreateOrgForm({ user }: Props) {
   const [name, setName] = useState(suggestedOrgName(user))
   const [submitting, setSubmitting] = useState(false)
+  const [succeeded, setSucceeded] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Once an insert succeeds, this form should unmount when Realtime
+  // delivers the new orgs row and the parent flips to <Workspaces />.
+  // If Realtime stalls, we still stay locked so a frustrated user can't
+  // rapid-click their way to seven duplicate orgs (the original bug).
+  const locked = submitting || succeeded
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (locked) return
     setSubmitting(true)
     setError(null)
     const { error: insertError } = await supabase
       .from('orgs')
       .insert({ name: name.trim(), created_by: user.id })
-    setSubmitting(false)
     if (insertError) {
+      setSubmitting(false)
       setError(insertError.message)
+      return
     }
+    setSucceeded(true)
+    // Intentionally leave `submitting` true so the form stays locked
+    // until the parent unmounts us.
   }
 
   return (
@@ -43,12 +55,19 @@ export function CreateOrgForm({ user }: Props) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          disabled={submitting}
+          disabled={locked}
         />
-        <button type="submit" disabled={submitting || !name.trim()}>
-          {submitting ? 'Creating…' : 'Create organization'}
+        <button type="submit" disabled={locked || !name.trim()}>
+          {succeeded
+            ? 'Created'
+            : submitting
+              ? 'Creating…'
+              : 'Create organization'}
         </button>
       </form>
+      {succeeded && (
+        <p className="ok">Created — loading your workspace…</p>
+      )}
       {error && <p className="err">{error}</p>}
     </div>
   )
