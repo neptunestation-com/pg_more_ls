@@ -51,6 +51,18 @@ export function SchemaGraph({ tables, columns, relationships }: Props) {
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             fitView
+            fitViewOptions={{
+              // Tighter than the React Flow default (0.1) — less empty
+              // canvas around the graph, more readable detail.
+              padding: 0.05,
+              // Cap zoom-in so a small schema (e.g. 1-2 tables) doesn't
+              // scale to absurd size; keep zoom-out generous so large
+              // schemas can fit on screen.
+              maxZoom: 1,
+              minZoom: 0.2,
+            }}
+            minZoom={0.1}
+            maxZoom={2}
             proOptions={{ hideAttribution: true }}
             nodesDraggable
             nodesConnectable={false}
