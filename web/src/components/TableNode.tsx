@@ -1,4 +1,5 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react'
+import { pillContent } from '../lib/tablePill'
 
 export interface TableNodeData {
   tableName: string
@@ -13,6 +14,7 @@ export interface TableNodeData {
 
 export function TableNode({ data, selected }: NodeProps) {
   const d = data as unknown as TableNodeData
+  const pill = pillContent(d)
   return (
     <div
       className={`table-node status-${d.governanceStatus} ${selected ? 'selected' : ''}`}
@@ -21,7 +23,12 @@ export function TableNode({ data, selected }: NodeProps) {
       <div className="table-node-header">
         <strong title={`${d.schemaName}.${d.tableName}`}>{d.tableName}</strong>
         <span className={`status-pill ${d.governanceStatus}`}>
-          {pillContent(d)}
+          {pill.glyph && (
+            <span className="glyph" aria-hidden="true">
+              {pill.glyph}
+            </span>
+          )}
+          {pill.text}
         </span>
       </div>
       <div className="table-node-body">
@@ -32,35 +39,10 @@ export function TableNode({ data, selected }: NodeProps) {
           </div>
         ))}
         {d.columns.length > 5 && (
-          <div className="col-row col-more">
-            …{d.columns.length - 5} more
-          </div>
+          <div className="col-row col-more">…{d.columns.length - 5} more</div>
         )}
       </div>
       <Handle type="source" position={Position.Right} />
     </div>
   )
-}
-
-function pillContent(d: TableNodeData) {
-  // Pair an icon with the text so the status is conveyed without
-  // relying on color alone. RLS-on doesn't carry a glyph — the word
-  // "rls" is already the affirmative signal.
-  if (!d.hasRls) {
-    return (
-      <>
-        <span className="glyph" aria-hidden="true">⚠</span>
-        no rls
-      </>
-    )
-  }
-  if (d.governanceStatus === 'green') {
-    return (
-      <>
-        <span className="glyph" aria-hidden="true">✓</span>
-        proven
-      </>
-    )
-  }
-  return d.rlsForced ? 'rls forced' : 'rls'
 }

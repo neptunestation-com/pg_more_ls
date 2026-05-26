@@ -57,6 +57,16 @@ any org had no way to create another. Sidebar now has a
 "+ Add organization" button at the bottom that opens an `AddOrgModal`
 with the same anti-duplicate locking as the empty-state form.
 
+**Vitest + initial logic tests** — Vitest + `@testing-library/react`
++ `jsdom` wired into `web/`. Two pure-logic modules extracted so
+they're testable without rendering: `lib/tablePill.ts` (governance
+pill content selection) and `lib/schemaGraph.ts` (already extracted
+in the previous CHANGELOG entry; now covered by tests for the
+parallel-edge bundle indexing). 14 tests in two files. Run with
+`npm test` (or `npm run test:watch`). Not yet in CI — that's a
+separate follow-up since the existing `engine-ci` workflow only runs
+Gradle tests.
+
 **`/dev/overlay` visual-test route** — fixtures-based harness for
 `SchemaGraph`. Mounted at `/dev/overlay` (no auth, no real data
 fetched; Cloudflare Pages' SPA fallback handles the deep link).
