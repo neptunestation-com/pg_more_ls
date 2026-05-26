@@ -1,8 +1,9 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import {
   Background,
   Controls,
   ReactFlow,
+  useReactFlow,
   type EdgeTypes,
   type NodeTypes,
 } from '@xyflow/react'
@@ -25,6 +26,29 @@ interface Props {
 const nodeTypes: NodeTypes = { table: TableNode }
 const edgeTypes: EdgeTypes = { parallel: ParallelEdge }
 
+const FIT_OPTIONS = { padding: 0.05, maxZoom: 1, minZoom: 0.2 }
+
+/**
+ * Re-fits the React Flow viewport whenever the schema data changes.
+ * React Flow's `fitView` prop only runs on the very first mount, so
+ * switching scenarios in the demo route (or switching targets in
+ * production) would leave the viewport on the previous graph's zoom.
+ *
+ * Must be a child of <ReactFlow> so useReactFlow() finds the context.
+ */
+function AutoFit({ trigger }: { trigger: string }) {
+  const { fitView } = useReactFlow()
+  useEffect(() => {
+    // Defer to the next animation frame so React Flow has reconciled
+    // the new node positions before we measure to fit.
+    const raf = requestAnimationFrame(() => {
+      fitView({ ...FIT_OPTIONS, duration: 250 })
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [trigger, fitView])
+  return null
+}
+
 /**
  * Presentational: takes a schema snapshot and renders the React Flow
  * canvas + legend + empty-state. No data fetching. Used by both the
@@ -35,6 +59,17 @@ export function SchemaGraph({ tables, columns, relationships }: Props) {
   const { nodes, edges } = useMemo(
     () => buildGraph(tables, columns, relationships),
     [tables, columns, relationships],
+  )
+
+  // Stable trigger string for AutoFit — changes whenever the topology
+  // does. Uses ids + counts so reordering inside the same set doesn't
+  // trigger a re-fit (would be jarring).
+  const fitTrigger = useMemo(
+    () =>
+      `${tables.length}|${relationships.length}|${tables
+        .map((t) => t.id)
+        .join(',')}`,
+    [tables, relationships.length],
   )
 
   return (
@@ -51,16 +86,7 @@ export function SchemaGraph({ tables, columns, relationships }: Props) {
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             fitView
-            fitViewOptions={{
-              // Tighter than the React Flow default (0.1) — less empty
-              // canvas around the graph, more readable detail.
-              padding: 0.05,
-              // Cap zoom-in so a small schema (e.g. 1-2 tables) doesn't
-              // scale to absurd size; keep zoom-out generous so large
-              // schemas can fit on screen.
-              maxZoom: 1,
-              minZoom: 0.2,
-            }}
+            fitViewOptions={FIT_OPTIONS}
             minZoom={0.1}
             maxZoom={2}
             proOptions={{ hideAttribution: true }}
@@ -71,6 +97,7 @@ export function SchemaGraph({ tables, columns, relationships }: Props) {
           >
             <Background gap={20} />
             <Controls showInteractive={false} />
+            <AutoFit trigger={fitTrigger} />
           </ReactFlow>
         )}
       </div>
