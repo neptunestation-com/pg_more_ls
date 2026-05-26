@@ -413,6 +413,26 @@ button:disabled {
   opacity: 1;
 }
 
+.sidebar-add-org {
+  display: block;
+  width: calc(100% - 1.5rem);
+  margin: 1rem 0.75rem 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidebar-add-org:hover:not(:disabled) {
+  background: var(--hover-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ----------------------------------------------------------------
    Main area
    ---------------------------------------------------------------- */

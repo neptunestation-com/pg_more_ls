@@ -110,6 +110,7 @@ function Workspaces({ session }: { session: Session }) {
         ) : (
           <>
             <Sidebar
+              user={session.user}
               orgs={orgs}
               targets={targets}
               selectedTargetId={selectedTargetId}
