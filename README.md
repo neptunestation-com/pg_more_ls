@@ -1,5 +1,7 @@
 # pg-policy-engine
 
+> **Archived (2026-11).** This project's ideas continue in [more_ls](https://github.com/neptunestation-com/more_ls): the decidable-fragment thesis and the undecidability argument (§1.1 of the algebra, now `docs/BACKGROUND.md` there), tenant isolation and write-restriction as property templates, policy equivalence as `mls diff`, the coverage/contradiction/subsumption/redundancy proofs as `mls lint` (D49), selectors as `applies_to` (D48), introspection and drift as `mls import` and `mls drift` (D45, D46), and the performance findings as `docs/FINDINGS.md`. Not carried: the Kotlin engine, the ANTLR surface syntax (`more_ls` reads JSON and renders terse/English), two-valued NULL handling (`more_ls` is three-valued throughout), `current_setting` as the identity (now an adapter with a stated trust assumption, D47), and the web app. The paper (`paper/policy-algebra.pdf`) and `spec/` remain readable here.
+
 CLI governance tool for PostgreSQL Row-Level Security policies backed by formal verification.
 
 ## What
